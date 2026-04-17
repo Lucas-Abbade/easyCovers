@@ -1,0 +1,12 @@
+# Ambientes Virtuais e Cache
+venv/
+__pycache__/
+
+# Bancos de dados locais e arquivos de áudio
+easycovers.db
+storage/
+temp_uploads/
+
+# Arquivos do sistema (Windows/Mac)
+.DS_Store
+Thumbs.db

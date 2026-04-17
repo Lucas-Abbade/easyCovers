@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+demucs
+librosa
+soundfile
+torch
+torchaudio
+torchvision
+torchcodec
+numpy<2
+setuptools
+wheel
