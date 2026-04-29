@@ -57,11 +57,19 @@ const Dashboard = ({ email, songs, onDeleteSong, onLogout }) => {
   return (
     <div className="font-sans bg-[var(--color-brand-light)] min-h-screen">
       <header className="bg-white shadow-md px-8 py-4 flex justify-between items-center">
-        <h1 className="text-3xl font-extrabold text-[var(--color-brand-medium)]">EasyCovers</h1>
-        <div className="flex gap-4 items-center">
-          <span className="font-bold text-[var(--color-brand-deep)]">Olá, {email}</span>
-          <button onClick={onLogout} className="text-red-500 font-bold ml-4 hover:underline">Sair</button>
-        </div>
+          <h1 className="text-3xl font-extrabold text-[var(--color-brand-medium)]">
+          EasyCovers
+      </h1>
+  
+  {/* NOVO: Botão de Perfil no canto superior direito */}
+        <button 
+          onClick={() => navigate('/profile')} 
+          className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 px-5 rounded-full transition-all border border-gray-200 shadow-sm"
+        >
+  {/* Ícone simples de usuário em emoji, mas você pode trocar por um SVG depois */}
+        <span className="text-lg">👤</span>
+          Meu Perfil
+        </button>
       </header>
 
       <main className="max-w-6xl mx-auto p-6 mt-6">

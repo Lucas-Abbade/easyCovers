@@ -55,7 +55,15 @@ const Login = ({ onLogin }) => {
         // Limpa os campos por precaução
         setUsername(''); setPassword(''); setConfirmPassword('');
         
-        navigate('/dashboard');
+        // --- AQUI ESTÁ A MÁGICA DA NAVEGAÇÃO INTELIGENTE ---
+        if (isRegistering) {
+          // Se acabou de criar a conta, vai para o Perfil
+          navigate('/profile', { state: { isNewUser: true } });
+        } else {
+          // Se só fez login normal, vai pro Dashboard
+          navigate('/dashboard');
+        }
+        
       } else {
         alert(`Erro: ${data.detail}`);
       }

@@ -6,12 +6,19 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
-    password = Column(String)
+    username = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
 
+    # ---> ADICIONE ESTAS NOVAS LINHAS AQUI <---
+    full_name = Column(String, nullable=True)
+    bio = Column(String, nullable=True)
+    instrument = Column(String, nullable=True)
+    favorite_genres = Column(String, nullable=True)
+    favorite_artists = Column(String, nullable=True)
+    profile_picture_url = Column(String, nullable=True)
     songs = relationship("Song", back_populates="owner")
-
+    
 class Song(Base):
     __tablename__ = "songs"
     

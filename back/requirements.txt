@@ -11,3 +11,4 @@ torchcodec
 numpy<2
 setuptools
 wheel
+yt-dlp

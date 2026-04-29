@@ -7,6 +7,10 @@ import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
 import Mixer from './pages/Mixer';
 
+// Importando as novas páginas de Perfil
+import ViewProfile from './pages/ViewProfile';
+import EditProfile from './pages/EditProfile';
+
 const App = () => {
   // 1. Tenta recuperar o usuário do "computador" (localStorage) ao abrir o site
   const [user, setUser] = useState(() => {
@@ -90,6 +94,19 @@ const App = () => {
           user ? <Mixer /> 
           : <Navigate to="/" />
         } />
+
+        {/* --- ROTAS DE PERFIL ADICIONADAS AQUI --- */}
+        <Route path="/profile" element={
+          user ? <ViewProfile user={user} onLogout={handleLogout} />  
+          : <Navigate to="/" />
+        } />
+
+        <Route path="/edit-profile" element={
+          user ? <EditProfile user={user} />  
+          : <Navigate to="/" />
+        } />
+        {/* --------------------------------------- */}
+
       </Routes>
     </Router>
   );

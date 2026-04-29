@@ -7,6 +7,8 @@ const Upload = ({ onAddSong, user }) => {
   const [uploadForm, setUploadForm] = useState({ name: '', artist: '', genre: '', instrument: 'Guitarra' });
   const [audioFile, setAudioFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [status, setStatus] = useState("idle"); // idle, downloading, processing
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +62,49 @@ const Upload = ({ onAddSong, user }) => {
       alert("Falha na conexão. O servidor Python está rodando?");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleYoutubeUpload = async () => {
+    if (!youtubeUrl) return alert("Cole um link!");
+
+    // 1. Inicia o Pop-up de Download
+    setStatus("downloading");
+
+    try {
+      const response = await fetch("http://localhost:8000/upload-youtube/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            url: youtubeUrl.split('&')[0], // Limpa o link de playlists
+            user_id: user.id,
+            custom_title: uploadForm.name,
+            custom_artist: uploadForm.artist,
+            custom_genre: uploadForm.genre,
+            custom_instrument: uploadForm.instrument
+        }),
+      });
+
+      if (response.ok) {
+        // 2. Muda para o Pop-up de IA
+        setStatus("processing");
+        
+        const newSong = await response.json(); 
+        
+        // 3. Adiciona a música na lista global (App.jsx) sem F5
+        onAddSong(newSong); 
+
+        // 4. Sucesso! Redireciona para a Home ou Mixer
+        alert("Música processada com sucesso!");
+        navigate("/dashboard"); 
+      } else {
+        alert("Erro no processamento.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao conectar com o servidor.");
+    } finally {
+      setStatus("idle");
     }
   };
 
@@ -133,6 +178,27 @@ const Upload = ({ onAddSong, user }) => {
               </div>
             </div>
 
+            <div className="mt-6 pt-6 border-t-2 border-gray-300">
+              <h3 className="text-lg font-bold text-[var(--color-brand-deep)] mb-4">Ou adicionar via YouTube</h3>
+              <div className="flex gap-3">
+                <input 
+                  type="text" 
+                  placeholder="Cole o link do YouTube aqui..."
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  className="flex-1 p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)]"
+                  disabled={status !== "idle"}
+                />
+                <button 
+                  onClick={handleYoutubeUpload} 
+                  disabled={status !== "idle" || !youtubeUrl}
+                  className="bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-bold transition"
+                >
+                  {status === "downloading" ? "Baixando..." : status === "processing" ? "Processando..." : "Adicionar via YouTube"}
+                </button>
+              </div>
+            </div>
+
             <div className="mt-4 border-2 border-dashed border-[var(--color-brand-medium)] p-8 text-center rounded-lg bg-[var(--color-brand-light)]/30">
               <label className="cursor-pointer">
                 <span className="bg-[var(--color-brand-medium)] text-white px-4 py-2 rounded-lg font-bold hover:bg-[var(--color-brand-dark)] transition">Selecionar Arquivo de Áudio</span>
@@ -149,6 +215,25 @@ const Upload = ({ onAddSong, user }) => {
           </form>
         )}
       </main>
+
+      {/* Pop-up de Status */}
+      {status !== "idle" && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50">
+          <div className="bg-white p-8 rounded-xl text-center text-gray-800 max-w-md mx-4">
+            {status === "downloading" ? (
+              <>
+                <div className="spinner"></div>
+                <p className="text-lg font-semibold">Buscando e baixando arquivo da música...</p>
+              </>
+            ) : (
+              <>
+                <div className="ai-wave"></div>
+                <p className="text-lg font-semibold">IA separando as trilhas (Voz, Bateria, Baixo...)</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

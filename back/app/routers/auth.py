@@ -15,7 +15,7 @@ def register_user(credentials: UserCredentials, db: Session = Depends(get_db)):
     novo_usuario = User(
         username=credentials.username, 
         email=credentials.email, 
-        password=credentials.password
+        hashed_password=credentials.password
     )
     db.add(novo_usuario)
     db.commit()
@@ -26,7 +26,7 @@ def register_user(credentials: UserCredentials, db: Session = Depends(get_db)):
 @router.post("/login/")
 def login_user(credentials: UserCredentials, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == credentials.email).first()
-    if not db_user or db_user.password != credentials.password:
+    if not db_user or db_user.hashed_password != credentials.password:
         raise HTTPException(status_code=401, detail="Email ou senha incorretos.")
     
     return {"status": "sucesso", "id": db_user.id, "email": db_user.email}
