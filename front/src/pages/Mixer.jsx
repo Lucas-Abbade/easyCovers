@@ -10,6 +10,25 @@ const trackLabels = {
   other: "Outros"
 };
 
+const keyNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+const normalizeKeyName = (key) => {
+  if (!key) return "Unknown";
+  if (typeof key === 'object' && key.value) return key.value;
+  return key;
+};
+
+const getShiftedKey = (originalKey, semitones) => {
+  const normalized = normalizeKeyName(originalKey);
+  if (!normalized || normalized === "Unknown") return "Unknown";
+  const isMinor = normalized.endsWith("m");
+  const root = isMinor ? normalized.slice(0, -1) : normalized;
+  const index = keyNames.indexOf(root);
+  if (index === -1) return normalized;
+  const shiftedIndex = (index + semitones + 12) % 12;
+  return `${keyNames[shiftedIndex]}${isMinor ? 'm' : ''}`;
+};
+
 const Mixer = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,8 +44,12 @@ const Mixer = () => {
   const [volumes, setVolumes] = useState({ vocals: 80, drums: 80, bass: 80, other: 80 });
   const [mutes, setMutes] = useState({ vocals: false, drums: false, bass: false, other: false });
   const [masterVolume, setMasterVolume] = useState(100);
+  const [originalKey, setOriginalKey] = useState("Unknown");
+  const [currentPitch, setCurrentPitch] = useState(0);
+  const [currentKey, setCurrentKey] = useState("Unknown");
   
   const players = useRef(null);
+  const pitchShift = useRef(null);
   const progressInterval = useRef(null);
 
   const trackLabels = {
@@ -54,12 +77,17 @@ const Mixer = () => {
     const pastaID = caminhoDaPasta.split(/[\\/]/).pop();
     const baseUrl = `http://localhost:8000/stems/${pastaID}/`;
 
+    setOriginalKey(normalizeKeyName(song.original_key || song.originalKey || "Unknown"));
+    setCurrentPitch(0);
+    setCurrentKey(getShiftedKey(song.original_key || song.originalKey || "Unknown", 0));
+
+    pitchShift.current = new Tone.PitchShift(0).toDestination();
     players.current = new Tone.Players({
       vocals: baseUrl + "vocals.wav", 
       drums: baseUrl + "drums.wav",
       bass: baseUrl + "bass.wav", 
       other: baseUrl + "other.wav",
-    }).toDestination(); 
+    }).connect(pitchShift.current);
 
     Tone.loaded().then(() => {
       setIsLoaded(true);
@@ -81,6 +109,7 @@ const Mixer = () => {
       Tone.Transport.stop();
       Tone.Transport.seconds = 0;
       players.current?.dispose();
+      pitchShift.current?.dispose();
     };
   }, [song, navigate]);
 
@@ -147,17 +176,24 @@ const handleVolumeChange = (track, value) => {
   }
 };
 
-  const handleMasterVolumeChange = (value) => {
+const handleMasterVolumeChange = (value) => {
   const numericValue = parseFloat(value);
   setMasterVolume(numericValue);
-  
-  Tone.Destination.volume.value = numericValue === 0 
-    ? -Infinity 
-    : 20 * Math.log10((numericValue / 100) * 0.5);
+
+  if (Tone.Destination) {
+    Tone.Destination.volume.value = numericValue === 0
+      ? -Infinity
+      : 20 * Math.log10(numericValue / 100);
+  }
 };
 
-  if (!song) return null;
-
+const changePitch = (delta) => {
+  const nextPitch = currentPitch + delta;
+  if (!pitchShift.current || nextPitch < -12 || nextPitch > 12) return;
+  pitchShift.current.pitch = nextPitch;
+  setCurrentPitch(nextPitch);
+  setCurrentKey(getShiftedKey(originalKey, nextPitch));
+};
   return (
     <div className="font-sans bg-[var(--color-brand-light)] min-h-screen">
        <header className="bg-white shadow-md px-8 py-4 flex justify-between items-center">
@@ -182,6 +218,29 @@ const handleVolumeChange = (track, value) => {
                    {song.genre || "Gênero não definido"}
                  </span>
                </div>
+             </div>
+           </div>
+
+           <div className="mb-8 grid gap-4 md:grid-flow-col md:auto-cols-max md:items-center bg-slate-50 p-5 rounded-3xl border border-slate-200">
+             <div className="text-sm text-slate-600">
+               <span className="font-bold text-slate-900">Tom original:</span> {originalKey}
+             </div>
+             <div className="text-sm text-slate-600">
+               <span className="font-bold text-slate-900">Tom atual:</span> {currentKey} {currentPitch !== 0 ? `(${currentPitch > 0 ? '+' : ''}${currentPitch} semitons)` : ''}
+             </div>
+             <div className="flex gap-3">
+               <button
+                 onClick={() => changePitch(-1)}
+                 className="bg-white border border-slate-300 text-slate-700 px-5 py-3 rounded-xl font-semibold hover:bg-slate-100 transition"
+               >
+                 - Tom
+               </button>
+               <button
+                 onClick={() => changePitch(1)}
+                 className="bg-[var(--color-brand-medium)] text-white px-5 py-3 rounded-xl font-semibold hover:bg-[var(--color-brand-dark)] transition"
+               >
+                 + Tom
+               </button>
              </div>
            </div>
 
@@ -261,9 +320,8 @@ const handleVolumeChange = (track, value) => {
           max="100" 
           value={volumes[track]} 
           onChange={(e) => handleVolumeChange(track, e.target.value)} 
-          className="appearance-none w-48 h-2 rounded-lg cursor-pointer accent-blue-600 absolute origin-center -rotate-90"
+          className="appearance-none w-48 h-2 rounded-lg cursor-pointer accent-blue-600 absolute inset-1/2 -translate-x-1/2 -translate-y-1/2 origin-center -rotate-90"
           style={{
-            /* Como ele está deitado e foi girado, usamos 'to right' */
             background: `linear-gradient(to right, #2563eb ${volumes[track]}%, #d1d5db ${volumes[track]}%)`
           }}
         />

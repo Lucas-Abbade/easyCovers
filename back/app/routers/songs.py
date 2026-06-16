@@ -18,9 +18,16 @@ def delete_song(song_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Música não encontrada.")
     
     caminho_da_pasta = song.folder_path
-    if caminho_da_pasta and os.path.exists(caminho_da_pasta):
-        shutil.rmtree(caminho_da_pasta)
-        
+    if caminho_da_pasta:
+        caminho_absoluto = os.path.abspath(caminho_da_pasta)
+        if os.path.exists(caminho_absoluto):
+            try:
+                shutil.rmtree(caminho_absoluto)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Erro ao deletar arquivos: {e}")
+        else:
+            print(f"Pasta de stems não encontrada: {caminho_absoluto}")
+    
     db.delete(song)
     db.commit()
     

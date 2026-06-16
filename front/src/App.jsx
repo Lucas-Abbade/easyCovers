@@ -64,7 +64,7 @@ const App = () => {
 
       if (response.ok) {
         // 2. Se o Python confirmou que deletou, removemos da tela do React
-        setSongs(songs.filter(s => s.id !== id));
+        setSongs(prevSongs => prevSongs.filter(s => s.id !== id));
       } else {
         const errorData = await response.json();
         alert(`Erro ao excluir: ${errorData.detail}`);

@@ -1,25 +1,38 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const keyOptions = [
+  "Unknown",
+  "C", "Cm",
+  "C#", "C#m",
+  "D", "Dm",
+  "D#", "D#m",
+  "E", "Em",
+  "F", "Fm",
+  "F#", "F#m",
+  "G", "Gm",
+  "G#", "G#m",
+  "A", "Am",
+  "A#", "A#m",
+  "B", "Bm",
+];
+
 const Upload = ({ onAddSong, user }) => {
   const navigate = useNavigate();
-  // Estado inicial mantém o gênero vazio para obrigar o usuário a escolher um
-  const [uploadForm, setUploadForm] = useState({ name: '', artist: '', genre: '', instrument: 'Guitarra' });
+  const [uploadForm, setUploadForm] = useState({ name: '', artist: '', genre: '', instrument: 'Guitarra', original_key: 'Unknown' });
   const [audioFile, setAudioFile] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [status, setStatus] = useState("idle"); // idle, downloading, processing
+  const [status, setStatus] = useState("idle");
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
     
-    // NOVO: Adicionado verificação para garantir que o gênero também foi escolhido
     if (!uploadForm.name || !uploadForm.artist || !uploadForm.genre || !audioFile) {
       alert("Preencha todos os dados, escolha um gênero e anexe um arquivo!");
       return;
     }
 
-    setIsProcessing(true);
+    setStatus("processing");
 
     const formData = new FormData();
     formData.append("file", audioFile);
@@ -30,6 +43,7 @@ const Upload = ({ onAddSong, user }) => {
         artist: uploadForm.artist,
         genre: uploadForm.genre,
         instrument: uploadForm.instrument,
+        original_key: uploadForm.original_key,
         user_id: user.id 
       }).toString();
 
@@ -47,6 +61,7 @@ const Upload = ({ onAddSong, user }) => {
           artist: uploadForm.artist,
           genre: uploadForm.genre,
           instrument: uploadForm.instrument,
+          original_key: uploadForm.original_key,
           folder: data.folder
         });
         
@@ -61,14 +76,13 @@ const Upload = ({ onAddSong, user }) => {
       console.error("Erro no envio:", error);
       alert("Falha na conexão. O servidor Python está rodando?");
     } finally {
-      setIsProcessing(false);
+      setStatus("idle");
     }
   };
 
   const handleYoutubeUpload = async () => {
     if (!youtubeUrl) return alert("Cole um link!");
 
-    // 1. Inicia o Pop-up de Download
     setStatus("downloading");
 
     try {
@@ -76,25 +90,23 @@ const Upload = ({ onAddSong, user }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-            url: youtubeUrl.split('&')[0], // Limpa o link de playlists
+            url: youtubeUrl.split('&')[0],
             user_id: user.id,
             custom_title: uploadForm.name,
             custom_artist: uploadForm.artist,
             custom_genre: uploadForm.genre,
-            custom_instrument: uploadForm.instrument
+            custom_instrument: uploadForm.instrument,
+            custom_original_key: uploadForm.original_key
         }),
       });
 
       if (response.ok) {
-        // 2. Muda para o Pop-up de IA
         setStatus("processing");
         
         const newSong = await response.json(); 
         
-        // 3. Adiciona a música na lista global (App.jsx) sem F5
         onAddSong(newSong); 
 
-        // 4. Sucesso! Redireciona para a Home ou Mixer
         alert("Música processada com sucesso!");
         navigate("/dashboard"); 
       } else {
@@ -119,16 +131,9 @@ const Upload = ({ onAddSong, user }) => {
       </header>
 
       <main className="max-w-2xl mx-auto p-8 mt-10 bg-white rounded-xl shadow-lg border-t-4 border-[var(--color-brand-medium)]">
-        <h2 className="text-2xl font-bold text-[var(--color-brand-deep)] mb-6">Processar Nova Música</h2>
+        <h2 className="text-2xl font-bold text-[var(--color-brand-deep)] mb-6">Adicionar sua música</h2>
         
-        {isProcessing ? (
-          <div className="text-center p-10">
-            <div className="w-16 h-16 border-t-4 border-b-4 border-[var(--color-brand-medium)] rounded-full animate-spin mx-auto mb-6"></div>
-            <h3 className="text-xl font-bold text-[var(--color-brand-deep)]">Separando as faixas com IA...</h3>
-            <p className="text-gray-500 mt-2">Isso pode levar de 1 a 5 minutos dependendo do seu computador e do tamanho da música.</p>
-          </div>
-        ) : (
-          <form onSubmit={handleUploadSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleUploadSubmit} className="flex flex-col gap-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-700 font-bold mb-2">Nome da Música</label>
@@ -141,7 +146,6 @@ const Upload = ({ onAddSong, user }) => {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* NOVO: Campo de Gênero transformado em Select */}
               <div>
                 <label className="block text-gray-700 font-bold mb-2">Gênero</label>
                 <select 
@@ -175,60 +179,84 @@ const Upload = ({ onAddSong, user }) => {
                   <option>Voz</option>
                   <option>Teclado</option>
                 </select>
-              </div>
+              </div>              
+              
+              <div>
+                <label className="block text-gray-700 font-bold mb-2">Tom Original</label>
+                <select value={uploadForm.original_key} onChange={(e) => setUploadForm({...uploadForm, original_key: e.target.value})} className="w-full p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)] bg-white">
+                  {keyOptions.map(key => (
+                    <option key={key} value={key}>{key}</option>
+                  ))}
+                </select>
+              </div>            
             </div>
 
             <div className="mt-6 pt-6 border-t-2 border-gray-300">
-              <h3 className="text-lg font-bold text-[var(--color-brand-deep)] mb-4">Ou adicionar via YouTube</h3>
+              <h3 className="text-lg font-bold text-[var(--color-brand-deep)] mb-4">Insira seu áudio</h3>
               <div className="flex gap-3">
                 <input 
                   type="text" 
-                  placeholder="Cole o link do YouTube aqui..."
+                  placeholder="Cole o link do youtube"
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
                   className="flex-1 p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)]"
                   disabled={status !== "idle"}
                 />
+                {/* AQUI ESTÁ A MUDANÇA: w-40 shrink-0 e py-3 */}
                 <button 
+                  type="button"
                   onClick={handleYoutubeUpload} 
                   disabled={status !== "idle" || !youtubeUrl}
-                  className="bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-bold transition"
+                  className="bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] disabled:bg-gray-400 text-white w-40 shrink-0 py-3 rounded-lg font-bold transition"
                 >
-                  {status === "downloading" ? "Baixando..." : status === "processing" ? "Processando..." : "Adicionar via YouTube"}
+                  {status === "downloading" ? "Baixando..." : status === "processing" ? "Processando..." : "Adicionar"}
                 </button>
               </div>
             </div>
 
-            <div className="mt-4 border-2 border-dashed border-[var(--color-brand-medium)] p-8 text-center rounded-lg bg-[var(--color-brand-light)]/30">
-              <label className="cursor-pointer">
-                <span className="bg-[var(--color-brand-medium)] text-white px-4 py-2 rounded-lg font-bold hover:bg-[var(--color-brand-dark)] transition">Selecionar Arquivo de Áudio</span>
-                <input type="file" accept="audio/*" onChange={(e) => setAudioFile(e.target.files[0])} className="hidden" />
-              </label>
-              <p className="text-sm text-gray-600 mt-4">
-                {audioFile ? `Arquivo selecionado: ${audioFile.name}` : "Formatos suportados: .mp3, .wav, .flac"}
-              </p>
+            <div className="flex items-center my-2 text-gray-500 font-medium">
+              <div className="flex-1 border-b border-gray-300"></div>
+              <span className="px-4 text-sm">ou</span>
+              <div className="flex-1 border-b border-gray-300"></div>
             </div>
+            
+            <div className="flex gap-3 items-stretch mt-2">
+              <div className="flex-1 border-2 border-dashed border-[var(--color-brand-medium)] p-6 text-center rounded-lg bg-[var(--color-brand-light)]/30 flex flex-col justify-center items-center">
+                <label className="cursor-pointer">
+                  <span className="bg-[var(--color-brand-medium)] text-white px-4 py-2 rounded-lg font-bold hover:bg-[var(--color-brand-dark)] transition">Selecionar Arquivo de Áudio</span>
+                  <input type="file" accept="audio/*" onChange={(e) => setAudioFile(e.target.files[0])} className="hidden" disabled={status !== "idle"} />
+                </label>
+                <p className="text-sm text-gray-600 mt-4">
+                  {audioFile ? `Arquivo selecionado: ${audioFile.name}` : "Formatos suportados: .mp3, .wav, .flac"}
+                </p>
+              </div>
 
-            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-lg font-bold mt-4 transition shadow-md">
-              Iniciar Separação Mágica
-            </button>
+              {/* AQUI ESTÁ A MUDANÇA: w-40 shrink-0 */}
+              <button 
+                type="submit" 
+                disabled={status !== "idle"}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white w-40 shrink-0 rounded-lg text-lg font-bold transition shadow-md flex items-center justify-center"
+              >
+                {status === "processing" ? "Processando..." : "Adicionar"}
+              </button>
+            </div>
           </form>
-        )}
       </main>
 
       {/* Pop-up de Status */}
-      {status !== "idle" && (
+      {(status === "downloading" || status === "processing") && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50">
           <div className="bg-white p-8 rounded-xl text-center text-gray-800 max-w-md mx-4">
+            <div className="w-16 h-16 border-t-4 border-b-4 border-[var(--color-brand-medium)] rounded-full animate-spin mx-auto mb-6"></div>
             {status === "downloading" ? (
               <>
-                <div className="spinner"></div>
                 <p className="text-lg font-semibold">Buscando e baixando arquivo da música...</p>
+                <p className="text-gray-500 mt-2">Aguarde enquanto preparamos o áudio do YouTube.</p>
               </>
             ) : (
               <>
-                <div className="ai-wave"></div>
                 <p className="text-lg font-semibold">IA separando as trilhas (Voz, Bateria, Baixo...)</p>
+                <p className="text-gray-500 mt-2">Isso pode levar de 1 a 5 minutos dependendo do tamanho da música.</p>
               </>
             )}
           </div>
