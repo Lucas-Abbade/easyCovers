@@ -110,7 +110,8 @@ const Upload = ({ onAddSong, user }) => {
         alert("Música processada com sucesso!");
         navigate("/dashboard"); 
       } else {
-        alert("Erro no processamento.");
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Erro no processamento: ${errorData.detail || 'Tente novamente.'}`);
       }
     } catch (error) {
       console.error(error);
@@ -121,17 +122,41 @@ const Upload = ({ onAddSong, user }) => {
   };
 
   return (
-    <div className="font-sans bg-[var(--color-brand-light)] min-h-screen">
-      <header className="bg-white shadow-md px-8 py-4 flex justify-between items-center">
-        <h1 className="text-3xl font-extrabold text-[var(--color-brand-medium)]">EasyCovers</h1>
+    <div 
+      className="font-sans min-h-screen bg-repeat"
+      style={{ 
+        backgroundImage: "url('/assets/dashboard_bg.jpg')",
+        backgroundSize: "320px 320px",
+        backgroundColor: "var(--color-brand-light)"
+      }}
+    >
+      <header className="bg-white/95 backdrop-blur-md shadow-md px-8 py-3 flex justify-between items-center sticky top-0 z-30">
+        <div className="flex items-center gap-3">
+          <img 
+            src="/assets/logo.jpg" 
+            alt="EasyCovers Logo" 
+            className="w-10 h-10 object-contain rounded-lg shadow-sm"
+          />
+          <h1 className="text-2xl font-extrabold text-[var(--color-brand-medium)]">
+            EasyCovers
+          </h1>
+        </div>
         <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-[var(--color-brand-medium)] font-bold flex items-center gap-2 transition">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
           Voltar para Biblioteca
         </button>
       </header>
 
-      <main className="max-w-2xl mx-auto p-8 mt-10 bg-white rounded-xl shadow-lg border-t-4 border-[var(--color-brand-medium)]">
-        <h2 className="text-2xl font-bold text-[var(--color-brand-deep)] mb-6">Adicionar sua música</h2>
+      <main className="max-w-2xl mx-auto p-8 my-8 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border-t-4 border-[var(--color-brand-medium)]">
+        <div className="flex flex-col items-center mb-6">
+          <img 
+            src="/assets/upload_illustration.jpg" 
+            alt="Ilustração de envio de áudio" 
+            className="w-44 h-auto object-contain mb-2 rounded-xl"
+          />
+          <h2 className="text-2xl font-extrabold text-[var(--color-brand-deep)]">Adicionar sua música</h2>
+          <p className="text-sm text-gray-500 mt-1">Envie o áudio ou cole um link do YouTube para separar as faixas</p>
+        </div>
         
         <form onSubmit={handleUploadSubmit} className="flex flex-col gap-5">
             <div className="grid grid-cols-2 gap-4">
@@ -192,24 +217,27 @@ const Upload = ({ onAddSong, user }) => {
             </div>
 
             <div className="mt-6 pt-6 border-t-2 border-gray-300">
-              <h3 className="text-lg font-bold text-[var(--color-brand-deep)] mb-4">Insira seu áudio</h3>
+              <h3 className="text-lg font-bold text-[var(--color-brand-deep)] mb-4 flex items-center gap-2">
+                <img src="/assets/icons/icon_youtube.png" alt="YouTube" className="w-6 h-6 object-contain" />
+                Importar pelo YouTube
+              </h3>
               <div className="flex gap-3">
                 <input 
                   type="text" 
-                  placeholder="Cole o link do youtube"
+                  placeholder="Cole o link do YouTube..."
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
                   className="flex-1 p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)]"
                   disabled={status !== "idle"}
                 />
-                {/* AQUI ESTÁ A MUDANÇA: w-40 shrink-0 e py-3 */}
                 <button 
                   type="button"
                   onClick={handleYoutubeUpload} 
                   disabled={status !== "idle" || !youtubeUrl}
-                  className="bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] disabled:bg-gray-400 text-white w-40 shrink-0 py-3 rounded-lg font-bold transition"
+                  className="flex items-center justify-center gap-2.5 bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] disabled:bg-gray-400 text-white w-48 shrink-0 py-2.5 rounded-lg font-bold transition shadow-sm"
                 >
-                  {status === "downloading" ? "Baixando..." : status === "processing" ? "Processando..." : "Adicionar"}
+                  <img src="/assets/icons/icon_youtube_white.png" alt="YouTube" className="w-9 h-9 object-contain" />
+                  {status === "downloading" ? "Baixando..." : status === "processing" ? "Processando..." : "Importar"}
                 </button>
               </div>
             </div>
@@ -223,7 +251,10 @@ const Upload = ({ onAddSong, user }) => {
             <div className="flex gap-3 items-stretch mt-2">
               <div className="flex-1 border-2 border-dashed border-[var(--color-brand-medium)] p-6 text-center rounded-lg bg-[var(--color-brand-light)]/30 flex flex-col justify-center items-center">
                 <label className="cursor-pointer">
-                  <span className="bg-[var(--color-brand-medium)] text-white px-4 py-2 rounded-lg font-bold hover:bg-[var(--color-brand-dark)] transition">Selecionar Arquivo de Áudio</span>
+                  <span className="flex items-center gap-3 bg-[var(--color-brand-medium)] text-white px-6 py-3 rounded-xl font-bold hover:bg-[var(--color-brand-dark)] transition shadow-sm">
+                    <img src="/assets/icons/icon_upload_cloud_white.png" alt="Upload" className="w-10 h-10 object-contain" />
+                    Selecionar Arquivo de Áudio
+                  </span>
                   <input type="file" accept="audio/*" onChange={(e) => setAudioFile(e.target.files[0])} className="hidden" disabled={status !== "idle"} />
                 </label>
                 <p className="text-sm text-gray-600 mt-4">
@@ -231,13 +262,13 @@ const Upload = ({ onAddSong, user }) => {
                 </p>
               </div>
 
-              {/* AQUI ESTÁ A MUDANÇA: w-40 shrink-0 */}
               <button 
                 type="submit" 
                 disabled={status !== "idle"}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white w-40 shrink-0 rounded-lg text-lg font-bold transition shadow-md flex items-center justify-center"
+                className="flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white w-48 shrink-0 rounded-lg text-lg font-bold transition shadow-md"
               >
-                {status === "processing" ? "Processando..." : "Adicionar"}
+                <img src="/assets/icons/icon_scissors_white.png" alt="Separar" className="w-9 h-9 object-contain" />
+                {status === "processing" ? "Processando..." : "Separar Faixas"}
               </button>
             </div>
           </form>

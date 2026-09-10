@@ -1,0 +1,93 @@
+# ==========================================
+# Logs do sistema e IA (Copilot / Antigravity)
+# ==========================================
+# Ignorar logs do sistema do Copilot
+docs/easycovers/.system_generated/
+.system_generated/
+**/.system_generated/
+
+# ==========================================
+# Skills (.github)
+# ==========================================
+# Ignorar fontes e arquivos desnecessários baixados nas skills
+.github/skills/**/*.ttf
+.github/skills/**/*.txt
+
+# ==========================================
+# Obsidian
+# ==========================================
+# Ignorar configurações locais do Obsidian
+.obsidian/workspace.json
+.obsidian/graph.json
+docs/easycovers/.obsidian/workspace.json
+docs/easycovers/.obsidian/graph.json
+**/.obsidian/workspace.json
+**/.obsidian/graph.json
+
+# ==========================================
+# Dependências e Pacotes (Front & Back)
+# ==========================================
+node_modules/
+*/node_modules/
+package-lock.json.bak
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python e Ambientes Virtuais
+venv/
+.venv/
+env/
+ENV/
+back/venv/
+
+# ==========================================
+# Cache e Compilados
+# ==========================================
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.eslintcache
+
+# Build e Distribuição
+dist/
+dist-ssr/
+build/
+front/dist/
+
+# ==========================================
+# Banco de Dados e Arquivos Temporários/Uploads Locais
+# ==========================================
+*.db
+*.sqlite
+*.sqlite3
+easycovers.db
+back/easycovers.db
+storage/
+back/storage/
+temp_uploads/
+back/temp_uploads/
+temp_downloads/
+back/temp_downloads/
+
+# ==========================================
+# Variáveis de Ambiente e Segredos
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# ==========================================
+# Configurações de Editores e Sistema Operacional
+# ==========================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.local

@@ -147,7 +147,14 @@ const handleSubmit = async (e) => {
 };
 
   return (
-    <div className="font-sans bg-[var(--color-brand-light)] min-h-screen">
+    <div 
+      className="font-sans min-h-screen bg-repeat"
+      style={{ 
+        backgroundImage: "url('/assets/dashboard_bg.jpg')",
+        backgroundSize: "320px 320px",
+        backgroundColor: "var(--color-brand-light)"
+      }}
+    >
       
       {/* --- MODAL DE CORTE DE FOTO (Aparece por cima de tudo) --- */}
       {isCropping && (
@@ -205,8 +212,17 @@ const handleSubmit = async (e) => {
       )}
       {/* -------------------------------------------------------- */}
 
-      <header className="bg-white shadow-md px-8 py-4 flex justify-between items-center">
-        <h1 className="text-3xl font-extrabold text-[var(--color-brand-medium)]">EasyCovers</h1>
+      <header className="bg-white/95 backdrop-blur-md shadow-md px-8 py-3 flex justify-between items-center sticky top-0 z-30">
+        <div className="flex items-center gap-3">
+          <img 
+            src="/assets/logo.jpg" 
+            alt="EasyCovers Logo" 
+            className="w-10 h-10 object-contain rounded-lg shadow-sm"
+          />
+          <h1 className="text-2xl font-extrabold text-[var(--color-brand-medium)]">
+            EasyCovers
+          </h1>
+        </div>
         <button 
           onClick={() => navigate('/dashboard')} 
           className="text-gray-500 font-bold hover:text-gray-800 transition-colors"

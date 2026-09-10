@@ -195,25 +195,46 @@ const changePitch = (delta) => {
   setCurrentKey(getShiftedKey(originalKey, nextPitch));
 };
   return (
-    <div className="font-sans bg-[var(--color-brand-light)] min-h-screen">
-       <header className="bg-white shadow-md px-8 py-4 flex justify-between items-center">
-         <h1 className="text-3xl font-extrabold text-[var(--color-brand-medium)]">EasyCovers</h1>
-         <button onClick={() => { setIsPlaying(false); Tone.Transport.stop(); navigate(-1); }} className="text-gray-600 font-bold hover:underline">Voltar ao Dashboard</button>
-       </header>
+    <div 
+      className="font-sans min-h-screen bg-cover bg-center bg-fixed"
+      style={{ 
+        backgroundImage: "url('/assets/mixer_bg.jpg')",
+        backgroundColor: "#0E1F4C"
+      }}
+    >
+      {/* Overlay sutil para manter legibilidade máxima */}
+      <div className="min-h-screen bg-[#0E1F4C]/60 backdrop-blur-[2px] pb-12">
+        <header className="bg-white/95 backdrop-blur-md shadow-md px-8 py-3 flex justify-between items-center sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/assets/logo.jpg" 
+              alt="EasyCovers Logo" 
+              className="w-10 h-10 object-contain rounded-lg shadow-sm"
+            />
+            <h1 className="text-2xl font-extrabold text-[var(--color-brand-medium)]">
+              EasyCovers
+            </h1>
+          </div>
+          <button onClick={() => { setIsPlaying(false); Tone.Transport.stop(); navigate(-1); }} className="text-gray-600 hover:text-[var(--color-brand-medium)] font-bold flex items-center gap-2 transition">
+            ← Voltar ao Dashboard
+          </button>
+        </header>
 
-       <main className="max-w-6xl mx-auto p-6 mt-6">
-         <section className="bg-white p-10 rounded-xl shadow-lg border-t-4 border-[var(--color-brand-medium)]">
-           
-           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
-             <div className="flex gap-6 items-center">
-               <div className="w-24 h-24 bg-gradient-to-br from-[var(--color-brand-medium)] to-[var(--color-brand-dark)] rounded-lg flex items-center justify-center shadow-md">
-                 <span className="text-white text-4xl">🎵</span>
-               </div>
-               <div>
-                 <h2 className="text-4xl font-black text-gray-800 uppercase leading-none mb-2">{song.name}</h2>
-                 <p className="text-xl text-gray-600 font-medium">
-                   Artista: <span className="text-[var(--color-brand-deep)]">{song.artist || "Desconhecido"}</span>
-                 </p>
+        <main className="max-w-6xl mx-auto p-6 mt-6">
+          <section className="bg-white/95 backdrop-blur-md p-10 rounded-2xl shadow-2xl border-t-4 border-[var(--color-brand-medium)]">
+            
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
+              <div className="flex gap-6 items-center">
+                <img 
+                  src="/assets/favicon.jpg" 
+                  alt="Track Cover" 
+                  className="w-24 h-24 rounded-2xl object-cover shadow-lg border-2 border-[var(--color-brand-light)]"
+                />
+                <div>
+                  <h2 className="text-4xl font-black text-gray-800 uppercase leading-none mb-2">{song.name}</h2>
+                  <p className="text-xl text-gray-600 font-medium">
+                    Artista: <span className="text-[var(--color-brand-deep)]">{song.artist || "Desconhecido"}</span>
+                  </p>
                  <span className="inline-block mt-2 px-3 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-full uppercase tracking-widest">
                    {song.genre || "Gênero não definido"}
                  </span>
@@ -285,8 +306,11 @@ const changePitch = (delta) => {
            </div>
 
            {/* Master Volume */}
-            <div className="mb-8 flex items-center gap-6 max-w-md mx-auto">
-              <span className="text-sm font-bold text-gray-400 uppercase">Master</span>
+            <div className="mb-8 flex items-center gap-6 max-w-md mx-auto bg-slate-50 px-6 py-3 rounded-2xl border border-slate-200">
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-500 uppercase shrink-0">
+                <img src="/assets/icons/icon_mixer.png" alt="Master" className="w-5 h-5 object-contain" />
+                Master
+              </div>
               <input 
                 type="range" 
                 min="0" 
@@ -294,7 +318,6 @@ const changePitch = (delta) => {
                 value={masterVolume} 
                 onChange={(e) => handleMasterVolumeChange(e.target.value)} 
                 className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                // NOVO: Gradiente para o volume master
                 style={{
                   background: `linear-gradient(to right, #2563eb ${masterVolume}%, #d1d5db ${masterVolume}%)`
                 }}
@@ -307,10 +330,13 @@ const changePitch = (delta) => {
   {["vocals", "drums", "bass", "other"].map(track => (
     <div key={track} className={`border-2 p-6 rounded-2xl text-center flex flex-col items-center transition-all ${mutes[track] ? 'bg-gray-200 border-gray-300 opacity-60' : 'bg-white border-gray-100 shadow-sm'}`}>
       
-      {/* Nome da Faixa Traduzido */}
-      <h4 className="text-sm font-black mb-4 uppercase tracking-widest text-gray-500">
-        {trackLabels[track]}
-      </h4>
+      {/* Nome da Faixa Traduzido com ícone de áudio */}
+      <div className="flex items-center gap-1.5 mb-4">
+        <img src="/assets/icons/icon_waveform.png" alt="Track" className="w-4 h-4 object-contain opacity-70" />
+        <h4 className="text-sm font-black uppercase tracking-widest text-gray-600">
+          {trackLabels[track]}
+        </h4>
+      </div>
 
       {/* Slider Vertical (Feito com Rotação de -90 graus para preservar o gradiente) */}
       <div className="flex flex-col items-center justify-center h-48 w-full relative my-4">
@@ -354,8 +380,9 @@ const changePitch = (delta) => {
     </div>
   ))}
 </div>
-         </section>
-       </main>
+          </section>
+        </main>
+      </div>
     </div>
   );
 };

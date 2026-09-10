@@ -110,6 +110,9 @@ async def upload_from_youtube(data: dict, db: Session = Depends(get_db)):
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
+            'js_runtimes': {'node': {}},
+            'quiet': False,
+            'no_warnings': False,
         }
 
         # 2. Download do áudio
