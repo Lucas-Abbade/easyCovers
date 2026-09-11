@@ -63,14 +63,14 @@ const Dashboard = ({ email, songs, onDeleteSong, onLogout }) => {
         backgroundColor: "var(--color-brand-light)"
       }}
     >
-      <header className="bg-white/95 backdrop-blur-md shadow-md px-8 py-3 flex justify-between items-center sticky top-0 z-30">
+      <header className="bg-white/95 backdrop-blur-md shadow-md px-8 py-2 flex justify-between items-center sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <img 
-            src="/assets/logo.jpg" 
+            src="/assets/logo_symbol.png" 
             alt="EasyCovers Logo" 
-            className="w-10 h-10 object-contain rounded-lg shadow-sm"
+            className="h-[88px] w-auto object-contain drop-shadow-sm"
           />
-          <h1 className="text-2xl font-extrabold text-[var(--color-brand-medium)]">
+          <h1 className="text-2xl font-extrabold text-[var(--color-brand-deep)]">
             EasyCovers
           </h1>
         </div>

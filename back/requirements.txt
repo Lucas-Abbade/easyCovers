@@ -2,7 +2,6 @@ fastapi
 uvicorn
 python-multipart
 demucs
-librosa
 soundfile
 torch
 torchaudio

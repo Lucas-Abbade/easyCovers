@@ -7,7 +7,9 @@ const trackLabels = {
   vocals: "Vocais",
   drums: "Bateria",
   bass: "Baixo",
-  other: "Outros"
+  other: "Outros",
+  guitar: "Guitarra",
+  piano: "Teclado/Piano"
 };
 
 const keyNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -41,8 +43,8 @@ const Mixer = () => {
   const [duration, setDuration] = useState(0); // Duração total da música
   
   // Estados de volume e mute (como já tínhamos)
-  const [volumes, setVolumes] = useState({ vocals: 80, drums: 80, bass: 80, other: 80 });
-  const [mutes, setMutes] = useState({ vocals: false, drums: false, bass: false, other: false });
+  const [volumes, setVolumes] = useState({ vocals: 80, drums: 80, bass: 80, other: 80, guitar: 80, piano: 80 });
+  const [mutes, setMutes] = useState({ vocals: false, drums: false, bass: false, other: false, guitar: false, piano: false });
   const [masterVolume, setMasterVolume] = useState(100);
   const [originalKey, setOriginalKey] = useState("Unknown");
   const [currentPitch, setCurrentPitch] = useState(0);
@@ -56,7 +58,9 @@ const Mixer = () => {
     vocals: "Vocais",
     drums: "Bateria",
     bass: "Baixo",
-    other: "Outros"
+    other: "Outros",
+    guitar: "Guitarra",
+    piano: "Teclado/Piano"
   };
 
   // Função auxiliar para formatar os segundos em "Minutos:Segundos" (ex: 3:45)
@@ -87,6 +91,8 @@ const Mixer = () => {
       drums: baseUrl + "drums.wav",
       bass: baseUrl + "bass.wav", 
       other: baseUrl + "other.wav",
+      guitar: baseUrl + "guitar.wav",
+      piano: baseUrl + "piano.wav",
     }).connect(pitchShift.current);
 
     Tone.loaded().then(() => {
@@ -97,7 +103,7 @@ const Mixer = () => {
       setDuration(players.current.player("vocals").buffer.duration);
       
       // 2. Sincroniza todas as faixas para tocarem exatamente juntas na "esteira" do Tone
-      ["vocals", "drums", "bass", "other"].forEach(track => {
+      ["vocals", "drums", "bass", "other", "guitar", "piano"].forEach(track => {
         handleVolumeChange(track, 80);
         players.current.player(track).sync().start(0);
       });
@@ -326,8 +332,8 @@ const changePitch = (delta) => {
             </div>
            
            {/* Canais do Mixer Vertical */}
-<div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-  {["vocals", "drums", "bass", "other"].map(track => (
+<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+  {["vocals", "drums", "bass", "other", "guitar", "piano"].map(track => (
     <div key={track} className={`border-2 p-6 rounded-2xl text-center flex flex-col items-center transition-all ${mutes[track] ? 'bg-gray-200 border-gray-300 opacity-60' : 'bg-white border-gray-100 shadow-sm'}`}>
       
       {/* Nome da Faixa Traduzido com ícone de áudio */}
