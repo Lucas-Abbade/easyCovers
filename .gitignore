@@ -2,7 +2,6 @@
 # Logs do sistema e IA (Copilot / Antigravity)
 # ==========================================
 # Ignorar logs do sistema do Copilot
-docs/easycovers/.system_generated/
 .system_generated/
 **/.system_generated/
 
@@ -19,8 +18,6 @@ docs/easycovers/.system_generated/
 # Ignorar configurações locais do Obsidian
 .obsidian/workspace.json
 .obsidian/graph.json
-docs/easycovers/.obsidian/workspace.json
-docs/easycovers/.obsidian/graph.json
 **/.obsidian/workspace.json
 **/.obsidian/graph.json
 
