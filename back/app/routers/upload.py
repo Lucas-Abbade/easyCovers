@@ -1,6 +1,7 @@
 import os
 import shutil
 import uuid
+import glob
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from yt_dlp import YoutubeDL
@@ -30,18 +31,19 @@ def process_audio(
     musica_folder = os.path.join(storage_base, musica_id)
     os.makedirs(musica_folder, exist_ok=True)
     
-    temp_path = f"temp_{file.filename}"
+    temp_path = f"temp_{musica_id}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+
+    normalized_path = f"temp_{musica_id}_normalized.wav"
 
     try:
         print(f"Processando: {name} - ID: {musica_id}")
         
-        # Normaliza o áudio usando loudnorm
-        normalized_path = f"temp_{musica_id}_normalized.mp3"
+        # Normaliza o áudio usando loudnorm para WAV a 44100Hz estéreo (lossless e rápido)
         normalize_audio(temp_path, normalized_path)
         
-        # Chama a função de Inteligência Artificial encapsulada com o arquivo normalizado
+        # Chama a função de Inteligência Artificial com o arquivo normalizado
         process_demucs(normalized_path, musica_folder)
 
         nova_musica = Song(
@@ -57,19 +59,31 @@ def process_audio(
         db.commit()
         db.refresh(nova_musica)
 
-        return {"status": "sucesso", "id": nova_musica.id, "folder": musica_folder, "original_key": original_key}
+        return {
+            "status": "sucesso", 
+            "id": nova_musica.id, 
+            "folder": musica_folder, 
+            "folder_path": musica_folder, 
+            "original_key": original_key
+        }
 
     except Exception as e:
-        print(f"Erro: {e}")
-        raise HTTPException(status_code=500, detail="Erro no processamento")
+        print(f"Erro no processamento: {e}")
+        if os.path.exists(musica_folder):
+            shutil.rmtree(musica_folder, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"Erro no processamento: {str(e)}")
     
     finally:
         if os.path.exists(temp_path):
-            os.remove(temp_path)
-        # Remove também o arquivo normalizado se existir
-        normalized_path = f"temp_{musica_id}_normalized.mp3"
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
         if os.path.exists(normalized_path):
-            os.remove(normalized_path)
+            try:
+                os.remove(normalized_path)
+            except Exception:
+                pass
 
 
 @router.post("/upload-youtube/")
@@ -86,15 +100,16 @@ async def upload_from_youtube(data: dict, db: Session = Depends(get_db)):
     custom_instrument = data.get('custom_instrument')
     custom_original_key = data.get('custom_original_key')
 
+    musica_folder = None
+    downloaded_file = None
+    normalized_path = None
+
     try:
-        # 1. Configurações do YT-DLP
         file_id = str(uuid.uuid4())
         musica_id = str(uuid.uuid4())[:8]
         storage_base = "storage/stems"
         musica_folder = os.path.join(storage_base, musica_id)
         os.makedirs(musica_folder, exist_ok=True)
-
-        output_filename = os.path.join(musica_folder, f"{file_id}.mp3")
 
         cpu_count = os.cpu_count() or 1
         ffmpeg_threads = max(1, cpu_count - 1)
@@ -103,32 +118,51 @@ async def upload_from_youtube(data: dict, db: Session = Depends(get_db)):
             'format': 'bestaudio/best',
             'noplaylist': True,
             'extract_flat': False,
-            'outtmpl': os.path.join(musica_folder, f"{file_id}.%(ext)s"),
+            'outtmpl': os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s"),
             'postprocessor_args': ['-threads', str(ffmpeg_threads)],
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
-            'js_runtimes': {'node': {}},
-            'quiet': False,
-            'no_warnings': False,
+            'quiet': True,
+            'no_warnings': True,
         }
 
-        # 2. Download do áudio
+        # Download do áudio do YouTube
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             song_title = info.get('title', 'Musica do YouTube')
+            if 'requested_downloads' in info and info['requested_downloads']:
+                downloaded_file = info['requested_downloads'][0].get('filepath')
+            if not downloaded_file or not os.path.exists(downloaded_file):
+                downloaded_file = ydl.prepare_filename(info)
 
-        # 3. Normaliza o áudio usando loudnorm
-        normalized_path = os.path.join(musica_folder, f"{file_id}_normalized.mp3")
-        normalize_audio(output_filename, normalized_path)
-        os.remove(output_filename)  # Remove o arquivo original após normalizar
+        # Fallback caso o nome divirja do esperado
+        if not downloaded_file or not os.path.exists(downloaded_file):
+            matches = glob.glob(os.path.join(DOWNLOAD_DIR, f"{file_id}.*"))
+            if matches:
+                downloaded_file = matches[0]
 
-        # 4. Chame o Demucs com o arquivo normalizado
+        if not downloaded_file or not os.path.exists(downloaded_file):
+            raise Exception("Não foi possível localizar o arquivo de áudio baixado do YouTube.")
+
+        # Normaliza o áudio diretamente para WAV (44100Hz, estéreo)
+        normalized_path = os.path.join(musica_folder, f"{file_id}_normalized.wav")
+        normalize_audio(downloaded_file, normalized_path)
+
+        # Remove o arquivo bruto baixado
+        if os.path.exists(downloaded_file):
+            try:
+                os.remove(downloaded_file)
+            except Exception:
+                pass
+            downloaded_file = None
+
+        # Processamento das 6 faixas com Demucs
         process_demucs(normalized_path, musica_folder)
 
-        # 5. Salva no Banco de Dados
+        # Salva no Banco de Dados
         nova_musica = Song(
             name=custom_title or song_title,
             artist=custom_artist or "YouTube",
@@ -142,17 +176,25 @@ async def upload_from_youtube(data: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(nova_musica)
 
-        # 6. Retorna o OBJETO completo
         return nova_musica
 
     except Exception as e:
         print(f"Erro no YouTube: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao baixar vídeo do YouTube")
+        if musica_folder and os.path.exists(musica_folder):
+            stem_files = [f for f in os.listdir(musica_folder) if f.endswith('.wav') and not f.endswith('_normalized.wav')]
+            if len(stem_files) < 6:
+                shutil.rmtree(musica_folder, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"Erro ao processar áudio do YouTube: {str(e)}")
     
     finally:
-        # Remove os arquivos temporários
-        if os.path.exists(output_filename):
-            os.remove(output_filename)
-        normalized_path = os.path.join(musica_folder, f"{file_id}_normalized.mp3")
-        if os.path.exists(normalized_path):
-            os.remove(normalized_path)
+        # Limpeza de arquivos temporários
+        if downloaded_file and os.path.exists(downloaded_file):
+            try:
+                os.remove(downloaded_file)
+            except Exception:
+                pass
+        if normalized_path and os.path.exists(normalized_path):
+            try:
+                os.remove(normalized_path)
+            except Exception:
+                pass

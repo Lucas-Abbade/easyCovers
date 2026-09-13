@@ -6,7 +6,6 @@ soundfile
 torch
 torchaudio
 torchvision
-torchcodec
 numpy<2
 setuptools
 wheel
