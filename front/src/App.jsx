@@ -46,6 +46,14 @@ const App = () => {
     localStorage.removeItem('user');
   };
 
+  const handleUpdateUser = (updatedData) => {
+    setUser(prev => {
+      const merged = { ...prev, ...updatedData };
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   const handleAddSong = (newSong) => {
     // Adiciona a música nova na lista sem precisar recarregar
     setSongs(prev => [...prev, newSong]);
@@ -81,7 +89,7 @@ const App = () => {
         <Route path="/" element={<Login onLogin={handleLogin} />} />
         
         <Route path="/dashboard" element={
-          user ? <Dashboard email={user.username || user.email} songs={songs} onDeleteSong={handleDeleteSong} onLogout={handleLogout} /> 
+          user ? <Dashboard email={user.username || user.email} user={user} songs={songs} onDeleteSong={handleDeleteSong} onLogout={handleLogout} /> 
           : <Navigate to="/" />
         } />
         
@@ -95,17 +103,17 @@ const App = () => {
           : <Navigate to="/" />
         } />
 
-        {/* --- ROTAS DE PERFIL ADICIONADAS AQUI --- */}
+        {/* --- ROTAS DE PERFIL --- */}
         <Route path="/profile" element={
-          user ? <ViewProfile user={user} onLogout={handleLogout} />  
+          user ? <ViewProfile user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />  
           : <Navigate to="/" />
         } />
 
         <Route path="/edit-profile" element={
-          user ? <EditProfile user={user} />  
+          user ? <EditProfile user={user} onUpdateUser={handleUpdateUser} />  
           : <Navigate to="/" />
         } />
-        {/* --------------------------------------- */}
+        {/* ----------------------- */}
 
       </Routes>
     </Router>

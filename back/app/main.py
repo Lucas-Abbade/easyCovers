@@ -4,18 +4,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 # Importações dos nossos próprios módulos
-from .database import engine, Base
+from .database import engine, Base, run_migrations
 # ADICIONADO: importação do router 'profile'
 from .routers import auth, songs, upload, profile 
 
-# Cria as tabelas no banco de dados
+# Cria as tabelas no banco de dados e executa migrações
 Base.metadata.create_all(bind=engine)
+run_migrations()
 
 app = FastAPI(title="EasyCovers API")
 
 # Configuração de pastas
 UPLOAD_DIR = "static/profile_pics"
+BANNER_DIR = "static/banner_pics"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(BANNER_DIR, exist_ok=True)
 os.makedirs("storage/stems", exist_ok=True)
 
 # --- CONFIGURAÇÃO DE ARQUIVOS ESTÁTICOS ---

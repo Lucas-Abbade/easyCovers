@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="gtr-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <filter id="gtr-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0284c7" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect x="12" y="12" width="176" height="176" rx="48" fill="url(#gtr-grad)" filter="url(#gtr-shadow)" />
+  <rect x="13" y="13" width="174" height="174" rx="47" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" />
+  <!-- Electric Strat Guitar -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Body with double cutaways -->
+    <path d="M64 146 C48 138 46 116 58 102 C64 94 74 96 78 90 C82 84 76 72 86 68 C90 66 94 70 92 78 C90 84 94 88 102 86 C114 84 126 94 122 110 C118 126 104 150 82 150 C72 150 68 148 64 146 Z" 
+          stroke-width="7" fill="rgba(255,255,255,0.15)" />
+    <!-- Neck -->
+    <line x1="84" y1="76" x2="132" y2="42" stroke-width="7" />
+    <!-- Headstock with 6 pegs -->
+    <path d="M132 42 L146 32 C150 30 154 34 150 38 L140 46 Z" stroke-width="5" fill="#ffffff" />
+    <circle cx="136" cy="32" r="2" fill="#ffffff" />
+    <circle cx="141" cy="35" r="2" fill="#ffffff" />
+    <circle cx="146" cy="38" r="2" fill="#ffffff" />
+    <!-- Pickups -->
+    <line x1="74" y1="108" x2="86" y2="100" stroke-width="5" />
+    <line x1="80" y1="116" x2="92" y2="108" stroke-width="5" />
+    <line x1="86" y1="124" x2="98" y2="116" stroke-width="5" />
+    <!-- Bridge and Volume -->
+    <rect x="88" y="128" width="12" height="6" rx="1.5" stroke-width="4" fill="#ffffff" transform="rotate(-35 88 128)" />
+    <circle cx="104" cy="124" r="3" fill="#ffffff" />
+  </g>
+</svg>

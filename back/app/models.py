@@ -1,7 +1,8 @@
 import os
 import enum
 import shutil
-from sqlalchemy import Enum, Column, Integer, String, ForeignKey, event
+from datetime import datetime
+from sqlalchemy import Enum, Column, Integer, String, Boolean, DateTime, ForeignKey, event
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -48,6 +49,16 @@ class User(Base):
     favorite_genres = Column(String, nullable=True)
     favorite_artists = Column(String, nullable=True)
     profile_picture_url = Column(String, nullable=True)
+    banner_picture_url = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    experience_level = Column(String, nullable=True)
+    social_instagram = Column(String, nullable=True)
+    social_youtube = Column(String, nullable=True)
+    social_spotify = Column(String, nullable=True)
+    social_x = Column(String, nullable=True)
+    is_profile_completed = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=True)
+
     songs = relationship("Song", back_populates="owner")
     
 class Song(Base):

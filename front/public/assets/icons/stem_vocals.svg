@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="voc-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <filter id="voc-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#4f46e5" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect x="12" y="12" width="176" height="176" rx="48" fill="url(#voc-grad)" filter="url(#voc-shadow)" />
+  <rect x="13" y="13" width="174" height="174" rx="47" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" />
+  <!-- Studio Microphone -->
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Mic Capsule -->
+    <rect x="80" y="44" width="40" height="66" rx="20" fill="rgba(255,255,255,0.12)" />
+    <!-- Mesh Grille lines -->
+    <line x1="80" y1="64" x2="120" y2="64" stroke-width="5" />
+    <line x1="80" y1="78" x2="120" y2="78" stroke-width="5" />
+    <line x1="100" y1="44" x2="100" y2="110" stroke-width="4" stroke-dasharray="2 6" />
+    <!-- Shock mount / cradle -->
+    <path d="M68 76 C68 116 132 116 132 76" />
+    <!-- Stand -->
+    <line x1="100" y1="116" x2="100" y2="148" stroke-width="8" />
+    <line x1="74" y1="148" x2="126" y2="148" stroke-width="8" />
+    <!-- Sound Waves -->
+    <path d="M52 68 C46 76 46 88 52 96" stroke-width="5" stroke-linecap="round" opacity="0.85" />
+    <path d="M148 68 C154 76 154 88 148 96" stroke-width="5" stroke-linecap="round" opacity="0.85" />
+    <path d="M40 58 C30 72 30 92 40 106" stroke-width="4" stroke-linecap="round" opacity="0.5" />
+    <path d="M160 58 C170 72 170 92 160 106" stroke-width="4" stroke-linecap="round" opacity="0.5" />
+  </g>
+</svg>

@@ -27,13 +27,21 @@ def register_user(credentials: UserCredentials, db: Session = Depends(get_db)):
     novo_usuario = User(
         username=credentials.username, 
         email=credentials.email, 
-        hashed_password=credentials.password
+        hashed_password=credentials.password,
+        is_profile_completed=False
     )
     db.add(novo_usuario)
     db.commit()
     db.refresh(novo_usuario)
     
-    return {"status": "sucesso", "id": novo_usuario.id, "email": novo_usuario.email, "username": novo_usuario.username}
+    return {
+        "status": "sucesso", 
+        "id": novo_usuario.id, 
+        "email": novo_usuario.email, 
+        "username": novo_usuario.username,
+        "profile_picture_url": novo_usuario.profile_picture_url or "",
+        "is_profile_completed": False
+    }
 
 
 @router.post("/login/")
@@ -42,7 +50,14 @@ def login_user(credentials: UserCredentials, db: Session = Depends(get_db)):
     if not db_user or db_user.hashed_password != credentials.password:
         raise HTTPException(status_code=401, detail="Email ou senha incorretos.")
     
-    return {"status": "sucesso", "id": db_user.id, "email": db_user.email}
+    return {
+        "status": "sucesso", 
+        "id": db_user.id, 
+        "email": db_user.email,
+        "username": db_user.username,
+        "profile_picture_url": db_user.profile_picture_url or "",
+        "is_profile_completed": bool(db_user.is_profile_completed)
+    }
 
 
 @router.post("/auth/google/")
@@ -86,10 +101,31 @@ def google_auth(token: TokenPayload, db: Session = Depends(get_db)):
             username = f"{base}{i}"
             i += 1
 
-        novo = User(username=username, email=email, hashed_password='', full_name=name, profile_picture_url=picture)
+        novo = User(
+            username=username, 
+            email=email, 
+            hashed_password='', 
+            full_name=name, 
+            profile_picture_url=picture,
+            is_profile_completed=False
+        )
         db.add(novo)
         db.commit()
         db.refresh(novo)
-        return {"status": "created", "id": novo.id, "email": novo.email, "username": novo.username}
+        return {
+            "status": "created", 
+            "id": novo.id, 
+            "email": novo.email, 
+            "username": novo.username,
+            "profile_picture_url": novo.profile_picture_url or "",
+            "is_profile_completed": False
+        }
 
-    return {"status": "ok", "id": db_user.id, "email": db_user.email, "username": db_user.username}
+    return {
+        "status": "ok", 
+        "id": db_user.id, 
+        "email": db_user.email, 
+        "username": db_user.username,
+        "profile_picture_url": db_user.profile_picture_url or "",
+        "is_profile_completed": bool(db_user.is_profile_completed)
+    }

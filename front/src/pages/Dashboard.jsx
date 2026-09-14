@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GuitarIcon } from '../components/Icons';
 
-const Dashboard = ({ email, songs = [], onDeleteSong, onLogout }) => {
+const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
   const navigate = useNavigate();
 
   // Estados para busca, filtros e ordenação
@@ -133,11 +134,19 @@ const Dashboard = ({ email, songs = [], onDeleteSong, onLogout }) => {
             className="flex items-center gap-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold py-1.5 px-3.5 sm:px-4 rounded-xl transition-all border border-slate-200 shadow-xs hover:border-slate-300 active:scale-95 group"
             title="Acessar dados do seu perfil"
           >
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--color-brand-medium)] to-[var(--color-brand-dark)] text-white text-xs font-black flex items-center justify-center shadow-xs">
-              {userInitials}
-            </div>
+            {user?.profile_picture_url ? (
+              <img 
+                src={user.profile_picture_url} 
+                alt="Foto de Perfil" 
+                className="w-7 h-7 rounded-lg object-cover border border-slate-200 shadow-xs" 
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--color-brand-medium)] to-[var(--color-brand-dark)] text-white text-xs font-black flex items-center justify-center shadow-xs">
+                {userInitials}
+              </div>
+            )}
             <span className="text-sm font-bold text-slate-700 group-hover:text-[var(--color-brand-deep)] max-w-[120px] sm:max-w-[160px] truncate hidden sm:inline">
-              {email ? email.split('@')[0] : 'Meu Perfil'}
+              {user?.username || (email ? email.split('@')[0] : 'Meu Perfil')}
             </span>
           </button>
 
@@ -533,8 +542,9 @@ const Dashboard = ({ email, songs = [], onDeleteSong, onLogout }) => {
 
                   {/* Badge de Instrumento */}
                   {song.instrument && (
-                    <span className="bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-xs px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider border border-blue-200/80">
-                      🎸 {song.instrument}
+                    <span className="bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-xs px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider border border-blue-200/80 inline-flex items-center gap-1.5">
+                      <GuitarIcon className="w-3.5 h-3.5" />
+                      <span>{song.instrument}</span>
                     </span>
                   )}
 
@@ -637,8 +647,9 @@ const Dashboard = ({ email, songs = [], onDeleteSong, onLogout }) => {
                       {song.genre || "Geral"}
                     </span>
                     {song.instrument && (
-                      <span className="bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-[11px] px-2.5 py-1 rounded-lg font-bold uppercase tracking-wider border border-blue-200/80">
-                        🎸 {song.instrument}
+                      <span className="bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-[11px] px-2.5 py-1 rounded-lg font-bold uppercase tracking-wider border border-blue-200/80 inline-flex items-center gap-1">
+                        <GuitarIcon className="w-3 h-3" />
+                        <span>{song.instrument}</span>
                       </span>
                     )}
                   </div>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="drum-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+    <filter id="drum-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#ea580c" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect x="12" y="12" width="176" height="176" rx="48" fill="url(#drum-grad)" filter="url(#drum-shadow)" />
+  <rect x="13" y="13" width="174" height="174" rx="47" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" />
+  <!-- Acoustic Drum Kit -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Bass Drum (Kick) -->
+    <circle cx="100" cy="118" r="34" stroke-width="7" fill="rgba(255,255,255,0.1)" />
+    <circle cx="100" cy="118" r="14" stroke-width="4" opacity="0.6" />
+    <!-- Bass Drum Spurs/Legs -->
+    <line x1="72" y1="138" x2="60" y2="154" stroke-width="6" />
+    <line x1="128" y1="138" x2="140" y2="154" stroke-width="6" />
+    <!-- Rack Tom Left -->
+    <rect x="66" y="64" width="28" height="20" rx="4" stroke-width="6" fill="rgba(255,255,255,0.12)" />
+    <!-- Rack Tom Right -->
+    <rect x="106" y="64" width="28" height="20" rx="4" stroke-width="6" fill="rgba(255,255,255,0.12)" />
+    <!-- Snare Drum (Far Left) -->
+    <ellipse cx="44" cy="98" rx="18" ry="8" stroke-width="5" fill="rgba(255,255,255,0.1)" />
+    <line x1="26" y1="98" x2="26" y2="108" stroke-width="5" />
+    <line x1="62" y1="98" x2="62" y2="108" stroke-width="5" />
+    <path d="M26 108 C26 114 62 114 62 108" stroke-width="5" />
+    <!-- Floor Tom (Far Right) -->
+    <rect x="138" y="94" width="24" height="26" rx="3" stroke-width="5" fill="rgba(255,255,255,0.1)" />
+    <line x1="140" y1="120" x2="136" y2="136" stroke-width="4" />
+    <line x1="160" y1="120" x2="164" y2="136" stroke-width="4" />
+    <!-- Hi-Hat / Crash Cymbals -->
+    <ellipse cx="46" cy="62" rx="20" ry="5" stroke-width="5" />
+    <line x1="46" y1="64" x2="46" y2="90" stroke-width="4" />
+    <ellipse cx="154" cy="58" rx="22" ry="5" stroke-width="5" />
+    <line x1="154" y1="60" x2="154" y2="92" stroke-width="4" />
+    <!-- Drumsticks Crossed (Stylized Accent) -->
+    <line x1="84" y1="44" x2="116" y2="58" stroke-width="4" />
+    <line x1="116" y1="44" x2="84" y2="58" stroke-width="4" />
+  </g>
+</svg>

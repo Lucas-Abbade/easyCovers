@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bass-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+    <filter id="bass-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f766e" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect x="12" y="12" width="176" height="176" rx="48" fill="url(#bass-grad)" filter="url(#bass-shadow)" />
+  <rect x="13" y="13" width="174" height="174" rx="47" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" />
+  <!-- Precision Bass Guitar -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Bass Body -->
+    <path d="M58 142 C44 134 42 112 54 98 C60 90 70 92 76 86 C80 80 74 68 84 64 C88 62 92 66 90 74 C88 80 94 84 100 82 C112 80 124 92 120 106 C116 122 104 146 80 146 C70 146 64 144 58 142 Z" 
+          stroke-width="7" fill="rgba(255,255,255,0.15)" />
+    <!-- Bass Neck -->
+    <line x1="84" y1="72" x2="136" y2="36" stroke-width="8" />
+    <!-- Headstock with 4 clover pegs -->
+    <path d="M136 36 L148 28 C152 26 156 30 152 34 L142 42 Z" stroke-width="6" fill="#ffffff" />
+    <circle cx="140" cy="26" r="2.5" fill="#ffffff" />
+    <circle cx="146" cy="30" r="2.5" fill="#ffffff" />
+    <circle cx="152" cy="34" r="2.5" fill="#ffffff" />
+    <!-- Split Pickups -->
+    <rect x="70" y="102" width="14" height="7" rx="2" stroke-width="4" fill="#ffffff" />
+    <rect x="78" y="111" width="14" height="7" rx="2" stroke-width="4" fill="#ffffff" />
+    <!-- Bridge -->
+    <rect x="78" y="130" width="18" height="7" rx="2" stroke-width="4" fill="#ffffff" />
+    <circle cx="100" cy="128" r="3.5" fill="#ffffff" />
+  </g>
+</svg>

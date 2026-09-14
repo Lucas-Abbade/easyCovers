@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  ScissorsIcon, 
+  MixerFadersIcon, 
+  PitchShiftIcon, 
+  CloudLibraryIcon, 
+  LockShieldIcon 
+} from '../components/Icons';
 
 const Login = ({ onLogin }) => {
   // Controle de fluxo da página (Showcase explicativo vs. Formulário de Autenticação)
@@ -39,8 +46,19 @@ const Login = ({ onLogin }) => {
 
       const data = await res.json();
       if (res.ok) {
-        onLogin({ id: data.id, email: data.email, username: data.username });
-        navigate('/dashboard');
+        const userData = {
+          id: data.id,
+          email: data.email,
+          username: data.username,
+          profile_picture_url: data.profile_picture_url || '',
+          is_profile_completed: Boolean(data.is_profile_completed)
+        };
+        onLogin(userData);
+        if (!userData.is_profile_completed) {
+          navigate('/edit-profile', { state: { isNewUser: true } });
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setErrorMessage(data.detail || 'Falha no login com Google.');
       }
@@ -156,11 +174,22 @@ const Login = ({ onLogin }) => {
       const data = await response.json();
 
       if (response.ok) {
-        onLogin({ id: data.id, email: data.email, username: data.username });
+        const userData = {
+          id: data.id,
+          email: data.email,
+          username: data.username,
+          profile_picture_url: data.profile_picture_url || '',
+          is_profile_completed: Boolean(data.is_profile_completed)
+        };
+        onLogin(userData);
         setUsername(''); 
         setPassword(''); 
         setConfirmPassword('');
-        navigate('/dashboard');
+        if (!userData.is_profile_completed) {
+          navigate('/edit-profile', { state: { isNewUser: true } });
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setErrorMessage(data.detail || "Não foi possível realizar a autenticação.");
       }
@@ -258,8 +287,8 @@ const Login = ({ onLogin }) => {
               {/* Card 1: Separação de Stems */}
               <div className="bg-slate-50/90 hover:bg-white p-4 rounded-2xl border border-slate-200/80 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 group">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-base shadow-xs">
-                    ✂️
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shadow-xs">
+                    <ScissorsIcon className="w-4 h-4 text-purple-700" />
                   </div>
                   <h3 className="text-sm font-black text-slate-800 group-hover:text-[var(--color-brand-medium)] transition-colors">
                     Separação em 6 Faixas
@@ -279,8 +308,8 @@ const Login = ({ onLogin }) => {
               {/* Card 2: Mixer Multitrack */}
               <div className="bg-slate-50/90 hover:bg-white p-4 rounded-2xl border border-slate-200/80 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 group">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-100 text-[var(--color-brand-medium)] flex items-center justify-center font-bold text-base shadow-xs">
-                    🎛️
+                  <div className="w-8 h-8 rounded-xl bg-blue-100 text-[var(--color-brand-medium)] flex items-center justify-center font-bold shadow-xs">
+                    <MixerFadersIcon className="w-4 h-4 text-[var(--color-brand-medium)]" />
                   </div>
                   <h3 className="text-sm font-black text-slate-800 group-hover:text-[var(--color-brand-medium)] transition-colors">
                     Mixer Multitrack ao Vivo
@@ -294,8 +323,8 @@ const Login = ({ onLogin }) => {
               {/* Card 3: Transposição Harmônica */}
               <div className="bg-slate-50/90 hover:bg-white p-4 rounded-2xl border border-slate-200/80 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 group">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base shadow-xs">
-                    🎵
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shadow-xs">
+                    <PitchShiftIcon className="w-4 h-4 text-emerald-700" />
                   </div>
                   <h3 className="text-sm font-black text-slate-800 group-hover:text-[var(--color-brand-medium)] transition-colors">
                     Transposição de Afinação
@@ -309,8 +338,8 @@ const Login = ({ onLogin }) => {
               {/* Card 4: Biblioteca na Nuvem */}
               <div className="bg-slate-50/90 hover:bg-white p-4 rounded-2xl border border-slate-200/80 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 group">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-base shadow-xs">
-                    ☁️
+                  <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shadow-xs">
+                    <CloudLibraryIcon className="w-4 h-4 text-indigo-700" />
                   </div>
                   <h3 className="text-sm font-black text-slate-800 group-hover:text-[var(--color-brand-medium)] transition-colors">
                     Biblioteca de Backing Tracks
@@ -345,8 +374,11 @@ const Login = ({ onLogin }) => {
                 </svg>
               </button>
 
-              <p className="text-xs font-semibold text-slate-400 mt-3.5 flex items-center gap-1.5 text-center">
-                <span>🔒 Acesso rápido e seguro</span>
+              <p className="text-xs font-semibold text-slate-400 mt-3.5 flex items-center justify-center gap-2 text-center">
+                <span className="inline-flex items-center gap-1.5">
+                  <LockShieldIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  Acesso rápido e seguro
+                </span>
                 <span>•</span>
                 <span>Login com e-mail ou conta Google</span>
               </p>

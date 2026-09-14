@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="pno-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#be123c" />
+    </linearGradient>
+    <filter id="pno-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#be123c" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect x="12" y="12" width="176" height="176" rx="48" fill="url(#pno-grad)" filter="url(#pno-shadow)" />
+  <rect x="13" y="13" width="174" height="174" rx="47" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" />
+  <!-- Grand Piano & Keybed -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Grand Piano Rim Contour -->
+    <path d="M42 120 L42 74 C42 66 50 56 66 54 C92 52 118 68 136 68 C152 68 158 80 158 92 L158 120 Z" 
+          stroke-width="7" fill="rgba(255,255,255,0.12)" />
+    <!-- Open Lid Prop Stick -->
+    <line x1="60" y1="54" x2="148" y2="38" stroke-width="5" />
+    <line x1="126" y1="42" x2="126" y2="68" stroke-width="4" />
+    <!-- Keyboard Bed Base -->
+    <rect x="40" y="118" width="120" height="34" rx="5" stroke-width="7" fill="rgba(255,255,255,0.95)" />
+    <!-- White Keys Dividers -->
+    <g stroke="#be123c" stroke-width="3">
+      <line x1="55" y1="120" x2="55" y2="150" />
+      <line x1="70" y1="120" x2="70" y2="150" />
+      <line x1="85" y1="120" x2="85" y2="150" />
+      <line x1="100" y1="120" x2="100" y2="150" />
+      <line x1="115" y1="120" x2="115" y2="150" />
+      <line x1="130" y1="120" x2="130" y2="150" />
+      <line x1="145" y1="120" x2="145" y2="150" />
+    </g>
+    <!-- Black Accidentals Keys -->
+    <g fill="#be123c" stroke="none">
+      <rect x="49" y="119" width="8" height="19" rx="1.5" />
+      <rect x="64" y="119" width="8" height="19" rx="1.5" />
+      <rect x="94" y="119" width="8" height="19" rx="1.5" />
+      <rect x="109" y="119" width="8" height="19" rx="1.5" />
+      <rect x="124" y="119" width="8" height="19" rx="1.5" />
+      <rect x="139" y="119" width="8" height="19" rx="1.5" />
+    </g>
+  </g>
+</svg>

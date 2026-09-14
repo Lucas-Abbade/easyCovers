@@ -7,7 +7,7 @@ import PlayPauseButton from '../components/PlayPauseButton';
 const STEM_CONFIG = {
   vocals: {
     label: "Vocais",
-    icon: "🎤",
+    iconSrc: "/assets/icons/stem_vocals.png",
     color: "from-purple-500 to-indigo-600",
     badgeBg: "bg-purple-50",
     badgeText: "text-purple-700",
@@ -17,7 +17,7 @@ const STEM_CONFIG = {
   },
   drums: {
     label: "Bateria",
-    icon: "🥁",
+    iconSrc: "/assets/icons/stem_drums.png",
     color: "from-amber-500 to-orange-600",
     badgeBg: "bg-amber-50",
     badgeText: "text-amber-700",
@@ -27,7 +27,7 @@ const STEM_CONFIG = {
   },
   bass: {
     label: "Baixo",
-    icon: "🎸",
+    iconSrc: "/assets/icons/stem_bass.png",
     color: "from-emerald-500 to-teal-600",
     badgeBg: "bg-emerald-50",
     badgeText: "text-emerald-700",
@@ -37,7 +37,7 @@ const STEM_CONFIG = {
   },
   guitar: {
     label: "Guitarra",
-    icon: "🎸",
+    iconSrc: "/assets/icons/stem_guitar.png",
     color: "from-blue-500 to-cyan-600",
     badgeBg: "bg-blue-50",
     badgeText: "text-blue-700",
@@ -47,7 +47,7 @@ const STEM_CONFIG = {
   },
   piano: {
     label: "Teclado / Piano",
-    icon: "🎹",
+    iconSrc: "/assets/icons/stem_piano.png",
     color: "from-pink-500 to-rose-600",
     badgeBg: "bg-pink-50",
     badgeText: "text-pink-700",
@@ -57,7 +57,7 @@ const STEM_CONFIG = {
   },
   other: {
     label: "Outros / FX",
-    icon: "🎛️",
+    iconSrc: "/assets/icons/stem_other.png",
     color: "from-slate-500 to-gray-700",
     badgeBg: "bg-slate-50",
     badgeText: "text-slate-700",
@@ -517,8 +517,11 @@ const Mixer = () => {
                 <h2 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight truncate">
                   {song?.name || "Música sem título"}
                 </h2>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  ✓ 6 Stems Isolados
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-600">
+                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                  </svg>
+                  <span>6 Stems Isolados</span>
                 </span>
               </div>
 
@@ -527,12 +530,14 @@ const Mixer = () => {
               </p>
 
               <div className="flex flex-wrap items-center gap-2 mt-2.5">
-                <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded-lg uppercase tracking-wider border border-gray-200">
-                  🎵 {song?.genre || "Gênero Geral"}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded-lg uppercase tracking-wider border border-gray-200">
+                  <img src="/assets/icons/icon_genre_disc.png" alt="" className="w-4 h-4 object-contain" />
+                  <span>{song?.genre || "Gênero Geral"}</span>
                 </span>
                 {song?.instrument && (
-                  <span className="px-3 py-1 bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-xs font-bold rounded-lg uppercase tracking-wider border border-blue-200">
-                    🎸 {song.instrument}
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-xs font-bold rounded-lg uppercase tracking-wider border border-blue-200">
+                    <img src="/assets/icons/icon_instrument_pick.png" alt="" className="w-4 h-4 object-contain" />
+                    <span>{song.instrument}</span>
                   </span>
                 )}
               </div>
@@ -619,9 +624,9 @@ const Mixer = () => {
               onClick={() => handleSeekDelta(-5)}
               disabled={!isLoaded}
               title="Voltar 5 segundos (Seta Esquerda)"
-              className="flex items-center gap-1 px-3.5 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 shadow-xs cursor-pointer"
             >
-              <span>⏪</span>
+              <img src="/assets/icons/icon_seek_backward.png" alt="" className="w-4 h-4 object-contain opacity-75" />
               <span>-5s</span>
             </button>
 
@@ -640,10 +645,10 @@ const Mixer = () => {
               onClick={() => handleSeekDelta(5)}
               disabled={!isLoaded}
               title="Avançar 5 segundos (Seta Direita)"
-              className="flex items-center gap-1 px-3.5 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 shadow-xs cursor-pointer"
             >
               <span>+5s</span>
-              <span>⏩</span>
+              <img src="/assets/icons/icon_seek_forward.png" alt="" className="w-4 h-4 object-contain opacity-75" />
             </button>
 
             <div className="text-xs text-gray-400 font-bold hidden sm:block">
@@ -743,17 +748,17 @@ const Mixer = () => {
               className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 transition active:scale-95 shadow-xs"
               title="Muta automaticamente o seu instrumento principal para você praticar junto"
             >
-              <span>🎸</span>
+              <img src="/assets/icons/icon_backing_track.png" alt="" className="w-4 h-4 object-contain" />
               <span>Modo Backing Track</span>
             </button>
 
             <button
               type="button"
               onClick={handleResetVolumes}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border border-gray-300 transition active:scale-95 shadow-xs"
+              className="flex items-center gap-2 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border border-gray-300 transition active:scale-95 shadow-xs"
               title="Restaura todas as faixas para volume padrão (80%) e remove solos/mutes"
             >
-              <span>🔄</span>
+              <img src="/assets/icons/icon_reset_levels.png" alt="" className="w-4 h-4 object-contain" />
               <span>Resetar Níveis</span>
             </button>
 
@@ -765,9 +770,12 @@ const Mixer = () => {
                   setSolos(noSolo);
                   applyAudioRouting(mutes, noSolo);
                 }}
-                className="flex items-center gap-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95"
+                className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95"
               >
-                <span>✕ Limpar Solos</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L10 8.94l3.72-3.72a.75.75 0 111.06 1.06L11.06 10l3.72 3.72a.75.75 0 01-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 01-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 011.06-1.06z" />
+                </svg>
+                <span>Limpar Solos</span>
               </button>
             )}
           </div>
@@ -777,7 +785,8 @@ const Mixer = () => {
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-600 flex items-center gap-2">
-              <span>🎚️ Canais de Mixagem Multifaixa</span>
+              <img src="/assets/icons/icon_mixer_board.png" alt="" className="w-5 h-5 object-contain" />
+              <span>Canais de Mixagem Multifaixa</span>
               <span className="text-xs text-[var(--color-brand-medium)] font-bold">
                 (Isolamento Cirúrgico HTDemucs)
               </span>
@@ -808,10 +817,12 @@ const Mixer = () => {
                 >
                   {/* Cabeçalho do Canal: Ícone + Nome do Stem */}
                   <div className="w-full flex flex-col items-center text-center">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="text-xl" role="img" aria-label={config.label}>
-                        {config.icon}
-                      </span>
+                    <div className="flex flex-col items-center gap-2 mb-1">
+                      <img
+                        src={config.iconSrc}
+                        alt={config.label}
+                        className="w-10 h-10 object-contain drop-shadow-sm transition-transform duration-200 hover:scale-105"
+                      />
                       <h4 className="text-xs font-black uppercase tracking-wider text-gray-800">
                         {config.label}
                       </h4>
@@ -909,7 +920,8 @@ const Mixer = () => {
         {/* 5. GUIA DE ATALHOS DE TECLADO NO RODAPÉ */}
         <footer className="mt-2 py-3 px-4 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-200 flex flex-wrap items-center justify-between text-xs text-gray-500 gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-gray-700">⌨️ Atalhos Rápidos:</span>
+            <img src="/assets/icons/icon_keyboard_shortcuts.png" alt="" className="w-4 h-4 object-contain" />
+            <span className="font-bold text-gray-700">Atalhos Rápidos:</span>
             <span className="bg-gray-200 text-gray-800 px-2 py-0.5 rounded font-mono font-bold">Espaço</span>
             <span>Tocar / Pausar</span>
             <span className="text-gray-300">•</span>
