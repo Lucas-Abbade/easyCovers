@@ -15,6 +15,7 @@ import {
   CheckCircleIcon,
   AlertCircleIcon
 } from '../components/Icons';
+import ThemeToggle from '../components/ThemeToggle';
 
 const PRESET_GENRES = [
   "Rock", "Pop", "Heavy Metal", "Hard Rock", "Blues", 
@@ -308,16 +309,16 @@ const EditProfile = ({ onUpdateUser }) => {
   if (loading) {
     return (
       <div 
-        className="font-sans min-h-screen bg-repeat flex flex-col justify-center items-center p-4 text-slate-700"
+        className="font-sans min-h-screen bg-repeat flex flex-col justify-center items-center p-4 text-slate-700 dark:text-slate-200"
         style={{ 
           backgroundImage: "url('/assets/dashboard_bg.jpg')",
           backgroundSize: "320px 320px",
           backgroundColor: "var(--color-brand-light)"
         }}
       >
-        <div className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-lg flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-slate-200 border-t-[var(--color-brand-medium)] rounded-full animate-spin"></div>
-          <p className="font-bold text-slate-600">Carregando configurações de perfil...</p>
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-8 rounded-2xl shadow-lg border border-slate-200/80 dark:border-slate-800 flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-700 border-t-[var(--color-brand-medium)] rounded-full animate-spin"></div>
+          <p className="font-bold text-slate-600 dark:text-slate-300">Carregando configurações de perfil...</p>
         </div>
       </div>
     );
@@ -330,7 +331,7 @@ const EditProfile = ({ onUpdateUser }) => {
 
   return (
     <div 
-      className="font-sans min-h-screen bg-repeat text-slate-800 selection:bg-[var(--color-brand-medium)] selection:text-white pb-20"
+      className="font-sans min-h-screen bg-repeat text-slate-800 dark:text-slate-100 selection:bg-[var(--color-brand-medium)] selection:text-white pb-20"
       style={{ 
         backgroundImage: "url('/assets/dashboard_bg.jpg')",
         backgroundSize: "320px 320px",
@@ -341,12 +342,12 @@ const EditProfile = ({ onUpdateUser }) => {
       {/* --- MODAL DE CORTE DE FOTO DE PERFIL --- */}
       {isCropping && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full animate-fade-in border border-slate-100">
-            <h3 className="text-lg font-black mb-4 text-slate-800 tracking-tight">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full animate-fade-in border border-slate-100 dark:border-slate-800">
+            <h3 className="text-lg font-black mb-4 text-slate-800 dark:text-slate-100 tracking-tight">
               Ajustar Foto de Perfil
             </h3>
             
-            <div className="border-4 border-slate-100 rounded-2xl overflow-hidden shadow-inner bg-slate-50">
+            <div className="border-4 border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-inner bg-slate-50 dark:bg-slate-800">
               <AvatarEditor
                 ref={editorRef}
                 image={selectedFile}
@@ -362,7 +363,7 @@ const EditProfile = ({ onUpdateUser }) => {
             
             {/* Controle de Zoom */}
             <div className="w-full mt-5 flex flex-col items-center">
-              <div className="flex justify-between w-full text-xs font-bold text-slate-500 mb-1">
+              <div className="flex justify-between w-full text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                 <span>Zoom</span>
                 <span>{Math.round(scale * 100)}%</span>
               </div>
@@ -373,7 +374,7 @@ const EditProfile = ({ onUpdateUser }) => {
                 step="0.02" 
                 value={scale} 
                 onChange={(e) => setScale(parseFloat(e.target.value))}
-                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-brand-medium)]"
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--color-brand-medium)]"
               />
             </div>
 
@@ -382,7 +383,7 @@ const EditProfile = ({ onUpdateUser }) => {
               <button 
                 type="button"
                 onClick={() => setIsCropping(false)}
-                className="flex-1 py-2.5 px-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all text-xs active:scale-95"
+                className="flex-1 py-2.5 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-xs active:scale-95"
               >
                 Cancelar
               </button>
@@ -399,27 +400,30 @@ const EditProfile = ({ onUpdateUser }) => {
       )}
 
       {/* --- CABEÇALHO GLOBAL --- */}
-      <header className="bg-white/90 backdrop-blur-md shadow-xs border-b border-slate-200/80 px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-40 transition-all">
-        <div 
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-3 cursor-pointer group"
-          title="EasyCovers"
-        >
-          <img 
-            src="/assets/logo_symbol.png" 
-            alt="EasyCovers Logo" 
-            className="h-10 w-auto object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
-          />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-[var(--color-brand-deep)] tracking-tight">
-                EasyCovers
-              </h1>
-              <span className="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md bg-blue-50 text-[var(--color-brand-medium)] border border-blue-200/60 tracking-wider">
-                {isNewUser ? "Boas-Vindas" : "Edição"}
-              </span>
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-40 transition-all">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div 
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-3 cursor-pointer group"
+            title="EasyCovers"
+          >
+            <img 
+              src="/assets/logo_symbol.png" 
+              alt="EasyCovers Logo" 
+              className="h-10 w-auto object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
+            />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-[var(--color-brand-deep)] tracking-tight">
+                  EasyCovers
+                </h1>
+                <span className="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 tracking-wider">
+                  {isNewUser ? "Boas-Vindas" : "Edição"}
+                </span>
+              </div>
             </div>
           </div>
+          <ThemeToggle />
         </div>
 
         {/* Botão Superior Direito */}
@@ -428,7 +432,7 @@ const EditProfile = ({ onUpdateUser }) => {
             <button 
               type="button"
               onClick={handleSkipOnboarding}
-              className="text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-slate-100"
+              className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <span>Pular por enquanto</span>
               <span>➔</span>
@@ -437,7 +441,7 @@ const EditProfile = ({ onUpdateUser }) => {
             <button 
               type="button"
               onClick={() => navigate('/profile')} 
-              className="text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200"
+              className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -474,13 +478,13 @@ const EditProfile = ({ onUpdateUser }) => {
 
         {/* Mensagens de Feedback */}
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold flex items-center gap-2.5 shadow-xs">
+          <div className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 text-sm font-bold flex items-center gap-2.5 shadow-xs">
             <AlertCircleIcon className="w-5 h-5 text-red-500 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
         {successMessage && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold flex items-center gap-2.5 shadow-xs">
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-sm font-bold flex items-center gap-2.5 shadow-xs">
             <CheckCircleIcon className="w-5 h-5 text-emerald-500 shrink-0" />
             <span>{successMessage}</span>
           </div>
@@ -489,21 +493,21 @@ const EditProfile = ({ onUpdateUser }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           
           {/* SEÇÃO 1: FOTOS E APARÊNCIA VISUAL */}
-          <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80">
-            <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-              <PaletteIcon className="w-5 h-5 text-indigo-500" /> Fotos & Identidade Visual
+          <section className="bg-white dark:bg-slate-900/90 p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80 dark:border-slate-800">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
+              <PaletteIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" /> Fotos & Identidade Visual
             </h3>
-            <p className="text-xs text-slate-500 mb-6 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium">
               Personalize o avatar e o banner de capa que aparecem no seu perfil.
             </p>
 
             {/* Banner de Capa */}
             <div className="mb-8">
-              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wide">
                 Banner de Capa
               </label>
               <div 
-                className="h-36 sm:h-44 w-full rounded-2xl bg-cover bg-center relative border border-slate-200 overflow-hidden flex items-center justify-center group"
+                className="h-36 sm:h-44 w-full rounded-2xl bg-cover bg-center relative border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center group"
                 style={{ 
                   backgroundImage: bannerPreviewUrl 
                     ? `url(${bannerPreviewUrl})` 
@@ -514,7 +518,7 @@ const EditProfile = ({ onUpdateUser }) => {
                 <div className="relative z-10 flex flex-wrap gap-2 justify-center">
                   <label 
                     htmlFor="banner-upload"
-                    className="cursor-pointer px-4 py-2 bg-white/90 hover:bg-white text-slate-800 text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                    className="cursor-pointer px-4 py-2 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
@@ -540,28 +544,28 @@ const EditProfile = ({ onUpdateUser }) => {
                   )}
                 </div>
               </div>
-              <span className="text-[11px] text-slate-400 mt-1.5 block">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 block">
                 Recomendado: imagem horizontal (1200 x 400px). Formatos JPG, PNG ou WEBP.
               </span>
             </div>
 
             {/* Foto de Perfil */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wide">
                 Foto de Perfil (Avatar)
               </label>
-              <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
                 <img 
                   src={previewUrl} 
                   alt="Preview" 
-                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-[var(--color-brand-medium)] shadow-md bg-white"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-[var(--color-brand-medium)] shadow-md bg-white dark:bg-slate-800"
                 />
                 
                 <div className="flex flex-col gap-2 items-center sm:items-start text-center sm:text-left">
                   <div className="flex flex-wrap gap-2">
                     <label 
                       htmlFor="avatar-upload"
-                      className="cursor-pointer px-4 py-2 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5"
+                      className="cursor-pointer px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs transition-all flex items-center gap-1.5"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
@@ -580,13 +584,13 @@ const EditProfile = ({ onUpdateUser }) => {
                       <button
                         type="button"
                         onClick={handleRemoveAvatar}
-                        className="px-3 py-2 text-red-600 hover:bg-red-50 text-xs font-bold rounded-xl transition-all"
+                        className="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-bold rounded-xl transition-all"
                       >
                         Remover Foto
                       </button>
                     )}
                   </div>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
                     Você poderá recortar e ajustar o zoom da imagem antes de salvar.
                   </span>
                 </div>
@@ -595,18 +599,18 @@ const EditProfile = ({ onUpdateUser }) => {
           </section>
 
           {/* SEÇÃO 2: DADOS PESSOAIS */}
-          <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80">
-            <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-              <UserIcon className="w-5 h-5 text-blue-500" /> Informações Pessoais
+          <section className="bg-white dark:bg-slate-900/90 p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80 dark:border-slate-800">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
+              <UserIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" /> Informações Pessoais
             </h3>
-            <p className="text-xs text-slate-500 mb-6 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium">
               Dados visíveis para identificação dentro do EasyCovers.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               {/* Nome Completo */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">
                   Nome Completo / Artístico
                 </label>
                 <input 
@@ -615,17 +619,17 @@ const EditProfile = ({ onUpdateUser }) => {
                   value={formData.full_name} 
                   onChange={handleChange}
                   placeholder="Ex: Lucas Abbade" 
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white dark:focus:bg-slate-850 transition-all"
                 />
               </div>
 
               {/* Username */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">
                   Nome de Usuário (@username) *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">@</span>
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 dark:text-slate-500 font-bold text-sm">@</span>
                   <input 
                     type="text" 
                     name="username" 
@@ -633,7 +637,7 @@ const EditProfile = ({ onUpdateUser }) => {
                     onChange={handleChange}
                     placeholder="seu_usuario" 
                     required
-                    className="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white transition-all"
+                    className="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white dark:focus:bg-slate-850 transition-all"
                   />
                 </div>
               </div>
@@ -641,7 +645,7 @@ const EditProfile = ({ onUpdateUser }) => {
 
             {/* Localização */}
             <div className="mb-4">
-              <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">
                 Cidade / Localização
               </label>
               <input 
@@ -650,17 +654,17 @@ const EditProfile = ({ onUpdateUser }) => {
                 value={formData.location} 
                 onChange={handleChange}
                 placeholder="Ex: São Paulo, Brasil" 
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white transition-all"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white dark:focus:bg-slate-850 transition-all"
               />
             </div>
 
             {/* Bio */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
-                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
                   Sobre mim (Bio Musical)
                 </label>
-                <span className={`text-[11px] font-bold ${formData.bio.length > 300 ? 'text-red-500' : 'text-slate-400'}`}>
+                <span className={`text-[11px] font-bold ${formData.bio.length > 300 ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'}`}>
                   {formData.bio.length} / 300
                 </span>
               </div>
@@ -671,31 +675,31 @@ const EditProfile = ({ onUpdateUser }) => {
                 maxLength={300}
                 rows={3}
                 placeholder="Conte sobre sua história musical, bandas em que toca ou o que gosta de produzir..." 
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white transition-all resize-none"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white dark:focus:bg-slate-850 transition-all resize-none"
               />
             </div>
           </section>
 
           {/* SEÇÃO 3: IDENTIDADE MUSICAL */}
-          <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80">
-            <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-              <GuitarIcon className="w-5 h-5 text-amber-500" /> Identidade Musical & Preferências
+          <section className="bg-white dark:bg-slate-900/90 p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80 dark:border-slate-800">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
+              <GuitarIcon className="w-5 h-5 text-amber-500 dark:text-amber-400" /> Identidade Musical & Preferências
             </h3>
-            <p className="text-xs text-slate-500 mb-6 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium">
               Essas informações ajudam a customizar sugestões de stems e tons musicais.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {/* Instrumento Principal */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">
                   Instrumento Principal
                 </label>
                 <select 
                   name="instrument" 
                   value={formData.instrument} 
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white transition-all cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white dark:focus:bg-slate-850 transition-all cursor-pointer"
                 >
                   <option value="">Selecione um instrumento...</option>
                   {INSTRUMENTS_LIST.map((inst) => (
@@ -706,14 +710,14 @@ const EditProfile = ({ onUpdateUser }) => {
 
               {/* Nível de Experiência */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">
                   Nível de Experiência
                 </label>
                 <select 
                   name="experience_level" 
                   value={formData.experience_level} 
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white transition-all cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white dark:focus:bg-slate-850 transition-all cursor-pointer"
                 >
                   <option value="">Selecione seu nível...</option>
                   {EXPERIENCE_LEVELS.map((level) => (
@@ -725,7 +729,7 @@ const EditProfile = ({ onUpdateUser }) => {
 
             {/* Gêneros Favoritos com Chips Interativos */}
             <div className="mb-6">
-              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wide">
                 Gêneros Musicais Favoritos (Clique para selecionar)
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
@@ -739,7 +743,7 @@ const EditProfile = ({ onUpdateUser }) => {
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                         isSelected 
                           ? 'bg-[var(--color-brand-medium)] text-white shadow-xs' 
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
                       }`}
                     >
                       {isSelected ? `✓ ${genre}` : `+ ${genre}`}
@@ -754,13 +758,13 @@ const EditProfile = ({ onUpdateUser }) => {
                 value={formData.favorite_genres} 
                 onChange={handleChange}
                 placeholder="Ou digite outros separados por vírgula..." 
-                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white transition-all"
+                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white dark:focus:bg-slate-850 transition-all"
               />
             </div>
 
             {/* Artistas Favoritos */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">
                 Artistas & Bandas Favoritas
               </label>
               <input 
@@ -769,27 +773,27 @@ const EditProfile = ({ onUpdateUser }) => {
                 value={formData.favorite_artists} 
                 onChange={handleChange}
                 placeholder="Ex: Pink Floyd, Red Hot Chili Peppers, Tim Maia, Iron Maiden..." 
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white transition-all"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:bg-white dark:focus:bg-slate-850 transition-all"
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
                 Separe os artistas com vírgula.
               </span>
             </div>
           </section>
 
           {/* SEÇÃO 4: REDES SOCIAIS & PORTFÓLIO */}
-          <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80">
-            <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-              <GlobeIcon className="w-5 h-5 text-blue-600" /> Presença Online & Redes Sociais
+          <section className="bg-white dark:bg-slate-900/90 p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80 dark:border-slate-800">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
+              <GlobeIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" /> Presença Online & Redes Sociais
             </h3>
-            <p className="text-xs text-slate-500 mb-6 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium">
               Insira o link completo ou o seu nome de usuário/canal. Os links ficarão clicáveis diretamente na sua página de perfil.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {/* Spotify */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                   <SpotifyIcon className="w-4 h-4 text-[#1DB954]" color="#1DB954" />
                   <span>Spotify</span>
                 </label>
@@ -803,17 +807,17 @@ const EditProfile = ({ onUpdateUser }) => {
                     value={formData.social_spotify} 
                     onChange={handleChange}
                     placeholder="https://open.spotify.com/artist/... ou nome" 
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-slate-850 transition-all"
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1 block">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                   Link do seu perfil de artista, playlist ou música no Spotify.
                 </span>
               </div>
 
               {/* YouTube */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                   <YouTubeIcon className="w-4 h-4 text-[#FF0000]" color="#FF0000" />
                   <span>YouTube</span>
                 </label>
@@ -827,17 +831,17 @@ const EditProfile = ({ onUpdateUser }) => {
                     value={formData.social_youtube} 
                     onChange={handleChange}
                     placeholder="https://youtube.com/@seuCanal ou @canal" 
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white dark:focus:bg-slate-850 transition-all"
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1 block">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                   Link do seu canal, clipe ou vídeo no YouTube.
                 </span>
               </div>
 
               {/* Instagram */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                   <InstagramIcon className="w-4 h-4 text-[#E4405F]" color="#E4405F" />
                   <span>Instagram</span>
                 </label>
@@ -851,22 +855,22 @@ const EditProfile = ({ onUpdateUser }) => {
                     value={formData.social_instagram} 
                     onChange={handleChange}
                     placeholder="https://instagram.com/perfil ou @perfil" 
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-slate-850 transition-all"
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1 block">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                   Seu @handle ou URL direta do Instagram.
                 </span>
               </div>
 
               {/* X (antigo Twitter) */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
-                  <XIcon className="w-3.5 h-3.5 text-slate-900" color="currentColor" />
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
+                  <XIcon className="w-3.5 h-3.5 text-slate-900 dark:text-slate-100" color="currentColor" />
                   <span>X (antigo Twitter)</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-3 text-slate-800 pointer-events-none flex items-center">
+                  <span className="absolute left-3.5 top-3 text-slate-800 dark:text-slate-200 pointer-events-none flex items-center">
                     <XIcon className="w-4 h-4" color="currentColor" />
                   </span>
                   <input 
@@ -875,10 +879,10 @@ const EditProfile = ({ onUpdateUser }) => {
                     value={formData.social_x} 
                     onChange={handleChange}
                     placeholder="https://x.com/seuUsuario ou @seuUsuario" 
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition-all"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 focus:bg-white dark:focus:bg-slate-850 transition-all"
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1 block">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                   Seu @handle ou link do perfil no X (Twitter).
                 </span>
               </div>
@@ -892,7 +896,7 @@ const EditProfile = ({ onUpdateUser }) => {
                 type="button"
                 onClick={() => navigate('/profile')}
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-6 py-3.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-all text-sm active:scale-95"
+                className="w-full sm:w-auto px-6 py-3.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-all text-sm active:scale-95"
               >
                 Cancelar
               </button>

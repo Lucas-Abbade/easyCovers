@@ -33,9 +33,6 @@ const App = () => {
           setSongs(data);
         })
         .catch(err => console.error("Erro ao carregar biblioteca:", err));
-    } else {
-      localStorage.removeItem('user');
-      setSongs([]);
     }
   }, [user]);
 
@@ -43,6 +40,7 @@ const App = () => {
   
   const handleLogout = () => {
     setUser(null);
+    setSongs([]);
     localStorage.removeItem('user');
   };
 

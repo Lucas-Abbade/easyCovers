@@ -1,11 +1,46 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand-light: #D1E8FF;
   --color-brand-medium: #2B69E6;
   --color-brand-dark: #1A3F99;
   --color-brand-deep: #0E1F4C;
 }
+
+:root {
+  --color-brand-light: #D1E8FF;
+  --color-brand-medium: #2B69E6;
+  --color-brand-dark: #1A3F99;
+  --color-brand-deep: #0E1F4C;
+  --page-bg-color: #D1E8FF;
+}
+
+.dark {
+  --color-brand-light: #070D1D;
+  --color-brand-deep: #F1F5F9;
+  --page-bg-color: #070D1D;
+  color-scheme: dark;
+}
+
+/* Transições suaves para background e texto */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background-color: #070D1D;
+  color: #F1F5F9;
+}
+
+/* Tratamento do background do estúdio no modo escuro */
+.dark div[style*="dashboard_bg.jpg"],
+.dark div[style*="mixer_bg.jpg"] {
+  background-color: #070D1D !important;
+  background-blend-mode: multiply;
+}
+
 
 /* Custom animations for upload and processing */
 .spinner {

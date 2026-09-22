@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import * as Tone from 'tone';
 import PlayPauseButton from '../components/PlayPauseButton';
+import ThemeToggle from '../components/ThemeToggle';
 
 // Identidade visual cromática e metadados padronizados para os 6 stems isolados
 const STEM_CONFIG = {
@@ -428,35 +429,44 @@ const Mixer = () => {
       }}
     >
       {/* HEADER PADRONIZADO EASYCOVERS */}
-      <header className="bg-white/95 backdrop-blur-md shadow-md px-6 md:px-8 py-3 flex justify-between items-center sticky top-0 z-30">
-        <div className="flex items-center gap-3">
-          <img
-            src="/assets/logo_symbol.png"
-            alt="EasyCovers Logo"
-            className="h-10 md:h-12 w-auto object-contain drop-shadow-sm"
-          />
-          <div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-[var(--color-brand-deep)] leading-tight">
-              EasyCovers
-            </h1>
-            <span className="text-xs text-gray-500 font-medium hidden sm:inline-block">
-              AI Audio Stem Separation Studio • Console de Mixagem
-            </span>
+      <header className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-md border-b border-slate-200/80 dark:border-slate-800 px-6 md:px-8 py-3 flex justify-between items-center sticky top-0 z-30 transition-all">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div 
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-3 cursor-pointer group"
+            title="EasyCovers - Ir para o início"
+          >
+            <img
+              src="/assets/logo_symbol.png"
+              alt="EasyCovers Logo"
+              className="h-10 md:h-12 w-auto object-contain drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
+            />
+            <div>
+              <h1 className="text-xl md:text-2xl font-extrabold text-[var(--color-brand-deep)] leading-tight">
+                EasyCovers
+              </h1>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline-block">
+                AI Audio Stem Separation Studio • Console de Mixagem
+              </span>
+            </div>
           </div>
+
+          {/* Botão de Alternância On/Off de Modo Escuro / Claro */}
+          <ThemeToggle />
         </div>
 
         {/* Status da Engine & Botão Voltar */}
         <div className="flex items-center gap-4">
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-[var(--color-brand-deep)]">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-xs font-semibold text-[var(--color-brand-deep)]">
             {!isLoaded ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                <span>Decodificando Stems WAV...</span>
+                <span className="text-amber-700 dark:text-amber-400">Decodificando Stems WAV...</span>
               </>
             ) : (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>Engine Pronta (44.1 kHz Estéreo)</span>
+                <span className="text-emerald-700 dark:text-emerald-400">Engine Pronta (44.1 kHz Estéreo)</span>
               </>
             )}
           </div>
@@ -468,7 +478,7 @@ const Mixer = () => {
               Tone.Transport.stop();
               navigate('/dashboard');
             }}
-            className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-[var(--color-brand-medium)] bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition border border-gray-200 shadow-xs"
+            className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 px-4 py-2 rounded-xl transition border border-gray-200 dark:border-slate-700 shadow-xs"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -481,11 +491,10 @@ const Mixer = () => {
       {/* ÁREA PRINCIPAL DO ESTÚDIO */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 my-4 flex flex-col gap-6">
 
-        {/* 1. CARD DE METADADOS DA MÚSICA & PITCH SHIFTER */}
-        <section className="bg-white/95 backdrop-blur-md rounded-2xl p-6 md:p-7 shadow-xl border border-white/80 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          
-          {/* Capa com Efeito Vinil Animado + Dados da Faixa */}
-          <div className="flex items-center gap-5 sm:gap-6 min-w-0">
+        {/* 1. CABEÇALHO DO PROJETO COM DETALHES DA MÚSICA & AFINAÇÃO */}
+        <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border border-white/60 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="flex items-center gap-5 w-full lg:w-auto">
+            {/* Vinil decorativo com capa centralizada */}
             <div className="relative flex items-center shrink-0">
               {/* Disco de Vinil que projeta e gira com o áudio tocando */}
               <div
@@ -514,10 +523,10 @@ const Mixer = () => {
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h2 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight truncate">
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-slate-100 leading-tight truncate">
                   {song?.name || "Música sem título"}
                 </h2>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-600">
                     <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
                   </svg>
@@ -525,17 +534,17 @@ const Mixer = () => {
                 </span>
               </div>
 
-              <p className="text-base md:text-lg text-gray-600 font-medium truncate">
+              <p className="text-base md:text-lg text-gray-600 dark:text-slate-300 font-medium truncate">
                 Artista: <span className="font-bold text-[var(--color-brand-deep)]">{song?.artist || "Desconhecido"}</span>
               </p>
 
               <div className="flex flex-wrap items-center gap-2 mt-2.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded-lg uppercase tracking-wider border border-gray-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 text-xs font-bold rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">
                   <img src="/assets/icons/icon_genre_disc.png" alt="" className="w-4 h-4 object-contain" />
                   <span>{song?.genre || "Gênero Geral"}</span>
                 </span>
                 {song?.instrument && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-xs font-bold rounded-lg uppercase tracking-wider border border-blue-200">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-xs font-bold rounded-lg uppercase tracking-wider border border-blue-200 dark:border-blue-900/50">
                     <img src="/assets/icons/icon_instrument_pick.png" alt="" className="w-4 h-4 object-contain" />
                     <span>{song.instrument}</span>
                   </span>
@@ -545,23 +554,23 @@ const Mixer = () => {
           </div>
 
           {/* Módulo de Transposição Harmônica (Pitch Shifting) */}
-          <div className="w-full lg:w-auto bg-slate-50/90 p-4 md:p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-3 shrink-0 shadow-xs">
+          <div className="w-full lg:w-auto bg-slate-50/90 dark:bg-slate-800/80 p-4 md:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-3 shrink-0 shadow-xs">
             <div className="flex items-center gap-3">
               <div className="text-left lg:text-right">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider block">
                   Afinação Harmônica
                 </span>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-gray-500">Tom Original: <strong className="text-gray-800">{originalKey}</strong></span>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-sm font-black text-[var(--color-brand-medium)]">
+                  <span className="text-xs text-gray-500 dark:text-slate-400">Tom Original: <strong className="text-gray-800 dark:text-slate-200">{originalKey}</strong></span>
+                  <span className="text-gray-300 dark:text-slate-600">•</span>
+                  <span className="text-sm font-black text-[var(--color-brand-medium)] dark:text-blue-400">
                     Atual: {currentKey}
                   </span>
                 </div>
               </div>
 
               {currentPitch !== 0 && (
-                <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-blue-100 text-blue-800 border border-blue-200">
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                   {currentPitch > 0 ? `+${currentPitch}` : currentPitch} st
                 </span>
               )}
@@ -573,7 +582,7 @@ const Mixer = () => {
                 onClick={() => changePitch(-1)}
                 disabled={currentPitch <= -12}
                 title="Diminuir 1 semitom"
-                className="px-3 py-1.5 bg-white hover:bg-gray-100 disabled:opacity-50 text-gray-700 font-bold text-xs rounded-xl border border-slate-300 shadow-xs transition active:scale-95"
+                className="px-3 py-1.5 bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 disabled:opacity-50 text-gray-700 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-300 dark:border-slate-600 shadow-xs transition active:scale-95"
               >
                 - Semitom
               </button>
@@ -583,7 +592,7 @@ const Mixer = () => {
                   type="button"
                   onClick={resetPitch}
                   title="Restaurar afinação original"
-                  className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-extrabold text-xs rounded-xl border border-amber-200 transition active:scale-95"
+                  className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-extrabold text-xs rounded-xl border border-amber-200 dark:border-amber-800 transition active:scale-95"
                 >
                   Reset (0)
                 </button>
@@ -603,7 +612,7 @@ const Mixer = () => {
         </section>
 
         {/* 2. PLAYER CENTRAL & TIMELINE ESTILO SPOTIFY / DAW */}
-        <section className="bg-white/95 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border-t-4 border-[var(--color-brand-medium)] flex flex-col items-center gap-5">
+        <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border-t-4 border-[var(--color-brand-medium)] border-x border-b border-slate-200/80 dark:border-slate-800 flex flex-col items-center gap-5">
           
           {/* Controles de Transporte (Rewind 5s, Play/Pause, Forward 5s, Restart) */}
           <div className="flex items-center gap-4 md:gap-6">
@@ -612,7 +621,7 @@ const Mixer = () => {
               onClick={handleRestart}
               disabled={!isLoaded}
               title="Voltar ao início (R)"
-              className="p-3 text-gray-400 hover:text-gray-700 disabled:opacity-40 transition active:scale-95 rounded-full hover:bg-gray-100 cursor-pointer"
+              className="p-3 text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 disabled:opacity-40 transition active:scale-95 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                 <path d="M9.195 18.44c1.25.714 2.805-.189 2.805-1.629v-2.34l6.945 3.968c1.25.715 2.805-.188 2.805-1.628V7.19c0-1.44-1.555-2.343-2.805-1.628L12 9.529v-2.34c0-1.44-1.555-2.343-2.805-1.628L2.25 9.53c-1.25.714-1.25 2.54 0 3.255l6.945 5.655z" />
@@ -624,7 +633,7 @@ const Mixer = () => {
               onClick={() => handleSeekDelta(-5)}
               disabled={!isLoaded}
               title="Voltar 5 segundos (Seta Esquerda)"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 dark:border-slate-700 shadow-xs cursor-pointer"
             >
               <img src="/assets/icons/icon_seek_backward.png" alt="" className="w-4 h-4 object-contain opacity-75" />
               <span>-5s</span>
@@ -645,7 +654,7 @@ const Mixer = () => {
               onClick={() => handleSeekDelta(5)}
               disabled={!isLoaded}
               title="Avançar 5 segundos (Seta Direita)"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 dark:border-slate-700 shadow-xs cursor-pointer"
             >
               <span>+5s</span>
               <img src="/assets/icons/icon_seek_forward.png" alt="" className="w-4 h-4 object-contain opacity-75" />
@@ -653,8 +662,8 @@ const Mixer = () => {
 
             <div className="text-xs text-gray-400 font-bold hidden sm:block">
               {isPlaying ? (
-                <span className="flex items-center gap-1.5 text-blue-600">
-                  <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+                <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
                   Tocando
                 </span>
               ) : (
@@ -665,7 +674,7 @@ const Mixer = () => {
 
           {/* Barra da Linha do Tempo Estilo Spotify com Gradiente Suave */}
           <div className="w-full flex items-center gap-4">
-            <span className="text-xs md:text-sm font-bold text-gray-600 w-12 text-right tabular-nums">
+            <span className="text-xs md:text-sm font-bold text-gray-600 dark:text-slate-300 w-12 text-right tabular-nums">
               {formatTime(progress)}
             </span>
 
@@ -679,14 +688,14 @@ const Mixer = () => {
                 onChange={handleSeek}
                 disabled={!isLoaded}
                 aria-label="Progresso da música"
-                className="w-full h-2.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed"
+                className="w-full h-2.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed"
                 style={{
-                  background: `linear-gradient(to right, #2563eb ${(progress / (duration || 100)) * 100}%, #e2e8f0 ${(progress / (duration || 100)) * 100}%)`
+                  background: `linear-gradient(to right, #2563eb ${(progress / (duration || 100)) * 100}%, #64748b ${(progress / (duration || 100)) * 100}%)`
                 }}
               />
             </div>
 
-            <div className="flex items-center gap-2 w-20 text-xs md:text-sm font-bold text-gray-500 tabular-nums">
+            <div className="flex items-center gap-2 w-20 text-xs md:text-sm font-bold text-gray-500 dark:text-slate-400 tabular-nums">
               <span>{formatTime(duration)}</span>
               {duration > 0 && (
                 <span className="text-[11px] text-gray-400 hidden sm:inline">
@@ -698,16 +707,16 @@ const Mixer = () => {
         </section>
 
         {/* 3. BARRA MASTER & PRESETS DE ENSAIO */}
-        <section className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-white/80 flex flex-col md:flex-row items-center justify-between gap-5">
+        <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-white/80 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-5">
           
           {/* Master Volume */}
-          <div className="w-full md:w-80 flex items-center gap-4 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200">
+          <div className="w-full md:w-80 flex items-center gap-4 bg-slate-50 dark:bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <button
               type="button"
               onClick={toggleMasterMute}
               title={isMasterMuted ? "Desmutar Master (M)" : "Mutar Master (M)"}
               className={`p-1.5 rounded-lg transition active:scale-95 cursor-pointer ${
-                isMasterMuted ? 'bg-red-500 text-white' : 'text-gray-600 hover:bg-gray-200'
+                isMasterMuted ? 'bg-red-500 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
               }`}
             >
               {isMasterMuted ? (
@@ -722,9 +731,9 @@ const Mixer = () => {
             </button>
 
             <div className="flex-1 flex flex-col">
-              <div className="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+              <div className="flex justify-between items-center text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                 <span>Master Gain</span>
-                <span className="text-gray-900 font-extrabold">{masterVolume}%</span>
+                <span className="text-gray-900 dark:text-slate-100 font-extrabold">{masterVolume}%</span>
               </div>
               <input
                 type="range"
@@ -732,9 +741,9 @@ const Mixer = () => {
                 max="100"
                 value={masterVolume}
                 onChange={(e) => handleMasterVolumeChange(e.target.value)}
-                className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+                className="w-full h-2 bg-gray-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
                 style={{
-                  background: `linear-gradient(to right, #2563eb ${masterVolume}%, #cbd5e1 ${masterVolume}%)`
+                  background: `linear-gradient(to right, #2563eb ${masterVolume}%, #64748b ${masterVolume}%)`
                 }}
               />
             </div>
@@ -745,7 +754,7 @@ const Mixer = () => {
             <button
               type="button"
               onClick={handleBackingTrackPreset}
-              className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 transition active:scale-95 shadow-xs"
+              className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-800 transition active:scale-95 shadow-xs"
               title="Muta automaticamente o seu instrumento principal para você praticar junto"
             >
               <img src="/assets/icons/icon_backing_track.png" alt="" className="w-4 h-4 object-contain" />
@@ -755,7 +764,7 @@ const Mixer = () => {
             <button
               type="button"
               onClick={handleResetVolumes}
-              className="flex items-center gap-2 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border border-gray-300 transition active:scale-95 shadow-xs"
+              className="flex items-center gap-2 px-3.5 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 font-bold text-xs rounded-xl border border-gray-300 dark:border-slate-700 transition active:scale-95 shadow-xs"
               title="Restaura todas as faixas para volume padrão (80%) e remove solos/mutes"
             >
               <img src="/assets/icons/icon_reset_levels.png" alt="" className="w-4 h-4 object-contain" />
@@ -784,14 +793,14 @@ const Mixer = () => {
         {/* 4. CONSOLE DE MIXAGEM VERTICAL COM 6 CANAIS (STEMS) */}
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-600 flex items-center gap-2">
+            <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-600 dark:text-slate-400 flex items-center gap-2">
               <img src="/assets/icons/icon_mixer_board.png" alt="" className="w-5 h-5 object-contain" />
               <span>Canais de Mixagem Multifaixa</span>
-              <span className="text-xs text-[var(--color-brand-medium)] font-bold">
+              <span className="text-xs text-[var(--color-brand-medium)] dark:text-blue-400 font-bold">
                 (Isolamento Cirúrgico HTDemucs)
               </span>
             </h3>
-            <span className="text-xs text-gray-400 font-medium hidden sm:inline">
+            <span className="text-xs text-gray-400 dark:text-slate-500 font-medium hidden sm:inline">
               Clique duas vezes no fader para resetar a 80%
             </span>
           </div>
@@ -809,10 +818,10 @@ const Mixer = () => {
                   key={track}
                   className={`relative rounded-2xl p-4 md:p-5 flex flex-col items-center justify-between transition-all duration-200 border-2 shadow-sm ${
                     isEffectivelyMuted
-                      ? 'bg-slate-100/80 border-slate-300 opacity-60'
+                      ? 'bg-slate-100/80 dark:bg-slate-800/50 border-slate-300 dark:border-slate-700 opacity-60'
                       : isSolo
-                      ? 'bg-amber-50/40 border-amber-400 shadow-md ring-2 ring-amber-300'
-                      : 'bg-white/95 backdrop-blur-sm border-gray-200/90 hover:border-blue-300 hover:shadow-md'
+                      ? 'bg-amber-50/40 dark:bg-amber-950/40 border-amber-400 shadow-md ring-2 ring-amber-300'
+                      : 'bg-white/95 dark:bg-slate-900/90 backdrop-blur-sm border-gray-200/90 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md'
                   }`}
                 >
                   {/* Cabeçalho do Canal: Ícone + Nome do Stem */}
@@ -823,7 +832,7 @@ const Mixer = () => {
                         alt={config.label}
                         className="w-10 h-10 object-contain drop-shadow-sm transition-transform duration-200 hover:scale-105"
                       />
-                      <h4 className="text-xs font-black uppercase tracking-wider text-gray-800">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-gray-800 dark:text-slate-100">
                         {config.label}
                       </h4>
                     </div>

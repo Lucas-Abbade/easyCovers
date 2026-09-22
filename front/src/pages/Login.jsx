@@ -7,6 +7,7 @@ import {
   CloudLibraryIcon, 
   LockShieldIcon 
 } from '../components/Icons';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Login = ({ onLogin }) => {
   // Controle de fluxo da página (Showcase explicativo vs. Formulário de Autenticação)
@@ -221,7 +222,23 @@ const Login = ({ onLogin }) => {
       style={{ backgroundImage: "url('/assets/login_hero_bg.jpg')" }}
     >
       {/* Overlay refinado de alto contraste com glassmorphism e iluminação de fundo */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0E1F4C]/70 via-[#0E1F4C]/50 to-[#1A3F99]/60 backdrop-blur-[2px] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0E1F4C]/70 via-[#0E1F4C]/50 to-[#1A3F99]/60 dark:from-[#050B18]/85 dark:via-[#070E22]/80 dark:to-[#0C1A3B]/80 backdrop-blur-[2px] pointer-events-none"></div>
+
+      {/* Botão no Canto Superior Esquerdo com Logo, Nome e ThemeToggle */}
+      <div className="fixed top-4 left-4 z-50 flex items-center gap-2.5 sm:gap-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 sm:px-4 py-2 rounded-2xl border border-white/60 dark:border-slate-800 shadow-md">
+        <div className="flex items-center gap-2">
+          <img 
+            src="/assets/logo_symbol.png" 
+            alt="EasyCovers Logo" 
+            className="w-7 h-7 object-contain"
+          />
+          <span className="font-black text-sm text-[var(--color-brand-deep)] dark:text-slate-100 tracking-tight hidden sm:inline">
+            EasyCovers
+          </span>
+        </div>
+        <div className="hidden sm:block h-4 w-px bg-slate-200 dark:bg-slate-700"></div>
+        <ThemeToggle />
+      </div>
 
       {/* Orbs de iluminação ambiente para profundidade visual de nível sênior */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
@@ -233,9 +250,9 @@ const Login = ({ onLogin }) => {
         {/* ETAPA 1: CARD DE APRESENTAÇÃO E RECURSOS (HERO ONBOARDING)                 */}
         {/* ========================================================================= */}
         {!showAuthForm ? (
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-10 shadow-2xl border border-white/80 transition-all duration-300 animate-fade-in-scale">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-6 sm:p-10 shadow-2xl border border-white/80 dark:border-slate-800 transition-all duration-300 animate-fade-in-scale">
             {/* Header da Marca */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3.5">
                 <img 
                   src="/assets/logo_symbol.png" 
@@ -244,39 +261,39 @@ const Login = ({ onLogin }) => {
                 />
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl sm:text-3xl font-black text-[var(--color-brand-deep)] tracking-tight">
+                    <h1 className="text-2xl sm:text-3xl font-black text-[var(--color-brand-deep)] dark:text-slate-100 tracking-tight">
                       EasyCovers
                     </h1>
-                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-blue-50 text-[var(--color-brand-medium)] border border-blue-200/70 tracking-wider">
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200/70 dark:border-blue-800/60 tracking-wider">
                       Studio
                     </span>
                   </div>
-                  <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
                     Inteligência Artificial para Músicos
                   </p>
                 </div>
               </div>
 
               {/* Indicador Sonoro (Equalizer animado nativo) */}
-              <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-full" title="Motor de áudio ativo">
+              <div className="hidden sm:flex items-center gap-1 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 px-3 py-1.5 rounded-full" title="Motor de áudio ativo">
                 <span className="w-1.5 h-3 bg-[var(--color-brand-medium)] rounded-full eq-bar-1"></span>
                 <span className="w-1.5 h-5 bg-[var(--color-brand-medium)] rounded-full eq-bar-2"></span>
                 <span className="w-1.5 h-4 bg-[var(--color-brand-medium)] rounded-full eq-bar-3"></span>
                 <span className="w-1.5 h-6 bg-[var(--color-brand-medium)] rounded-full eq-bar-4"></span>
-                <span className="ml-2 text-[11px] font-bold text-slate-600">6 Stems AI</span>
+                <span className="ml-2 text-[11px] font-bold text-slate-600 dark:text-slate-300">6 Stems AI</span>
               </div>
             </div>
 
             {/* Texto de Apresentação e Mensagem de Destaque */}
             <div className="mt-6">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-blue-50 text-[var(--color-brand-medium)] border border-blue-200/60 mb-3">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 mb-3">
                 <span className="w-2 h-2 rounded-full bg-[var(--color-brand-medium)] animate-ping"></span>
                 Novo fluxo de estudos e ensaios
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[var(--color-brand-deep)] tracking-tight leading-tight">
+              <h2 className="text-2xl sm:text-3xl font-black text-[var(--color-brand-deep)] dark:text-slate-100 tracking-tight leading-tight">
                 Sua música como você nunca ouviu. Nem tocou.
               </h2>
-              <p className="text-slate-600 text-sm sm:text-base mt-2 leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base mt-2 leading-relaxed">
                 O EasyCovers transforma qualquer gravação em uma estação multitrack interativa. 
                 Isole instrumentos, personalize a mixagem em tempo real e domine o seu repertório com precisão profissional.
               </p>
@@ -285,67 +302,67 @@ const Login = ({ onLogin }) => {
             {/* Grid dos 4 Pilares / Funções do Site */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 my-7">
               {/* Card 1: Separação de Stems */}
-              <div className="bg-slate-50/90 hover:bg-white p-4 rounded-2xl border border-slate-200/80 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 group">
+              <div className="bg-slate-50/90 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 dark:hover:border-blue-600 group">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shadow-xs">
-                    <ScissorsIcon className="w-4 h-4 text-purple-700" />
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold shadow-xs">
+                    <ScissorsIcon className="w-4 h-4 text-purple-700 dark:text-purple-300" />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 group-hover:text-[var(--color-brand-medium)] transition-colors">
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-[var(--color-brand-medium)] dark:group-hover:text-blue-400 transition-colors">
                     Separação em 6 Faixas
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Isole e guarde stems de <strong>Vocais, Bateria, Baixo, Guitarra e Piano</strong> com inteligência artificial de estúdio.
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2.5">
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">Voz</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">Bateria</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">Baixo</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Guitarra</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">Voz</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">Bateria</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">Baixo</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">Guitarra</span>
                 </div>
               </div>
 
               {/* Card 2: Mixer Multitrack */}
-              <div className="bg-slate-50/90 hover:bg-white p-4 rounded-2xl border border-slate-200/80 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 group">
+              <div className="bg-slate-50/90 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 dark:hover:border-blue-600 group">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-100 text-[var(--color-brand-medium)] flex items-center justify-center font-bold shadow-xs">
-                    <MixerFadersIcon className="w-4 h-4 text-[var(--color-brand-medium)]" />
+                  <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/50 text-[var(--color-brand-medium)] dark:text-blue-400 flex items-center justify-center font-bold shadow-xs">
+                    <MixerFadersIcon className="w-4 h-4 text-[var(--color-brand-medium)] dark:text-blue-400" />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 group-hover:text-[var(--color-brand-medium)] transition-colors">
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-[var(--color-brand-medium)] dark:group-hover:text-blue-400 transition-colors">
                     Mixer Multitrack ao Vivo
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Controle volumes individuais, ative <strong>Solo</strong> para tirar partes de ouvido ou use <strong>Mute</strong> para praticar como backing track.
                 </p>
               </div>
 
               {/* Card 3: Transposição Harmônica */}
-              <div className="bg-slate-50/90 hover:bg-white p-4 rounded-2xl border border-slate-200/80 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 group">
+              <div className="bg-slate-50/90 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 dark:hover:border-blue-600 group">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shadow-xs">
-                    <PitchShiftIcon className="w-4 h-4 text-emerald-700" />
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold shadow-xs">
+                    <PitchShiftIcon className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 group-hover:text-[var(--color-brand-medium)] transition-colors">
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-[var(--color-brand-medium)] dark:group-hover:text-blue-400 transition-colors">
                     Transposição de Afinação
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Mude a tonalidade (pitch shift) em semitons em tempo real para adequar ao seu alcance vocal ou instrumento.
                 </p>
               </div>
 
               {/* Card 4: Biblioteca na Nuvem */}
-              <div className="bg-slate-50/90 hover:bg-white p-4 rounded-2xl border border-slate-200/80 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 group">
+              <div className="bg-slate-50/90 dark:bg-slate-800/70 hover:bg-white dark:hover:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 transition-all duration-200 shadow-xs hover:shadow-md hover:border-blue-200 dark:hover:border-blue-600 group">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shadow-xs">
-                    <CloudLibraryIcon className="w-4 h-4 text-indigo-700" />
+                  <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold shadow-xs">
+                    <CloudLibraryIcon className="w-4 h-4 text-indigo-700 dark:text-indigo-300" />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 group-hover:text-[var(--color-brand-medium)] transition-colors">
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-[var(--color-brand-medium)] dark:group-hover:text-blue-400 transition-colors">
                     Biblioteca de Backing Tracks
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Guarde suas músicas sincronizadas, organize por gênero ou instrumento e acerte cada ensaio de forma prática.
                 </p>
               </div>
@@ -374,9 +391,9 @@ const Login = ({ onLogin }) => {
                 </svg>
               </button>
 
-              <p className="text-xs font-semibold text-slate-400 mt-3.5 flex items-center justify-center gap-2 text-center">
+              <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-3.5 flex items-center justify-center gap-2 text-center">
                 <span className="inline-flex items-center gap-1.5">
-                  <LockShieldIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <LockShieldIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                   Acesso rápido e seguro
                 </span>
                 <span>•</span>
@@ -388,7 +405,7 @@ const Login = ({ onLogin }) => {
           /* ========================================================================= */
           /* ETAPA 2: FORMULÁRIO DE LOGIN E CADASTRO                                   */
           /* ========================================================================= */
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/80 transition-all duration-300 animate-fade-in-scale max-w-md mx-auto">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/80 dark:border-slate-800 transition-all duration-300 animate-fade-in-scale max-w-md mx-auto">
             {/* Navegação de Retorno para Apresentação */}
             <div className="flex items-center justify-between mb-4">
               <button
@@ -397,7 +414,7 @@ const Login = ({ onLogin }) => {
                   setShowAuthForm(false);
                   setErrorMessage('');
                 }}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[var(--color-brand-medium)] transition-colors py-1 px-2 rounded-lg hover:bg-slate-100"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 transition-colors py-1 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
@@ -405,7 +422,7 @@ const Login = ({ onLogin }) => {
                 <span>Voltar para apresentação</span>
               </button>
 
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">EasyCovers Auth</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">EasyCovers Auth</span>
             </div>
 
             {/* Cabeçalho do Card */}
@@ -415,10 +432,10 @@ const Login = ({ onLogin }) => {
                 alt="EasyCovers Logo" 
                 className="mx-auto w-14 h-14 object-contain drop-shadow-sm mb-2"
               />
-              <h2 className="text-2xl font-black text-[var(--color-brand-deep)] tracking-tight">
+              <h2 className="text-2xl font-black text-[var(--color-brand-deep)] dark:text-slate-100 tracking-tight">
                 {isRegistering ? "Crie sua conta gratuita" : "Bem-vindo de volta"}
               </h2>
-              <p className="text-slate-500 text-xs mt-1 font-medium">
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 font-medium">
                 {isRegistering 
                   ? "Junte-se à comunidade de músicos e comece a mixar suas faixas" 
                   : "Acesse seu estúdio e continue de onde parou"}
@@ -426,14 +443,14 @@ const Login = ({ onLogin }) => {
             </div>
 
             {/* Seletor de Modo (Abas de Login / Cadastro) */}
-            <div className="bg-slate-100 p-1 rounded-xl flex items-center mb-5">
+            <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center mb-5">
               <button
                 type="button"
                 onClick={() => toggleMode(false)}
                 className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${
                   !isRegistering 
-                    ? 'bg-white text-[var(--color-brand-deep)] shadow-xs' 
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white dark:bg-slate-700 text-[var(--color-brand-deep)] dark:text-slate-100 shadow-xs' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 Entrar
@@ -443,8 +460,8 @@ const Login = ({ onLogin }) => {
                 onClick={() => toggleMode(true)}
                 className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${
                   isRegistering 
-                    ? 'bg-white text-[var(--color-brand-deep)] shadow-xs' 
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white dark:bg-slate-700 text-[var(--color-brand-deep)] dark:text-slate-100 shadow-xs' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 Cadastrar
@@ -453,7 +470,7 @@ const Login = ({ onLogin }) => {
 
             {/* Alerta de Erro Inline com Design Moderno */}
             {errorMessage && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-start gap-2 animate-fade-in-scale">
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 rounded-xl text-xs font-medium flex items-start gap-2 animate-fade-in-scale">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-red-500 shrink-0 mt-0.5">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                 </svg>
@@ -461,7 +478,7 @@ const Login = ({ onLogin }) => {
                 <button 
                   type="button" 
                   onClick={() => setErrorMessage('')} 
-                  className="text-red-400 hover:text-red-700"
+                  className="text-red-400 hover:text-red-700 dark:hover:text-red-300"
                   aria-label="Fechar mensagem de erro"
                 >
                   ✕
@@ -475,9 +492,9 @@ const Login = ({ onLogin }) => {
               {/* Campo Nome de Usuário (Apenas Cadastro) */}
               {isRegistering && (
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-700 ml-1">Nome de Usuário</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">Nome de Usuário</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                       </svg>
@@ -487,7 +504,7 @@ const Login = ({ onLogin }) => {
                       placeholder="ex: lucas_guitar"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:border-transparent outline-none transition-all"
+                      className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-850 focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:border-transparent outline-none transition-all"
                       required
                     />
                   </div>
@@ -496,9 +513,9 @@ const Login = ({ onLogin }) => {
 
               {/* Campo E-mail */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700 ml-1">E-mail</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">E-mail</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                     </svg>
@@ -508,7 +525,7 @@ const Login = ({ onLogin }) => {
                     placeholder="seu.email@exemplo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:border-transparent outline-none transition-all"
+                    className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-850 focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:border-transparent outline-none transition-all"
                     required
                   />
                 </div>
@@ -516,9 +533,9 @@ const Login = ({ onLogin }) => {
 
               {/* Campo Senha */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700 ml-1">Senha</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">Senha</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                     </svg>
@@ -528,13 +545,13 @@ const Login = ({ onLogin }) => {
                     placeholder={isRegistering ? "Crie uma senha forte" : "Insira sua senha"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-10 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:border-transparent outline-none transition-all"
+                    className="w-full pl-9 pr-10 py-2.5 bg-slate-50/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-850 focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:border-transparent outline-none transition-all"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
                     aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
                   >
                     {showPassword ? (
@@ -555,9 +572,9 @@ const Login = ({ onLogin }) => {
               {isRegistering && (
                 <>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-slate-700 ml-1">Confirmar Senha</label>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">Confirmar Senha</label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor" className="w-4 h-4">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
@@ -567,13 +584,13 @@ const Login = ({ onLogin }) => {
                         placeholder="Repita sua senha"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:border-transparent outline-none transition-all"
+                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-850 focus:ring-2 focus:ring-[var(--color-brand-medium)] focus:border-transparent outline-none transition-all"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
                         aria-label={showConfirmPassword ? "Ocultar confirmação" : "Ver confirmação"}
                       >
                         {showConfirmPassword ? (
@@ -591,19 +608,19 @@ const Login = ({ onLogin }) => {
                   </div>
 
                   {/* Checklist visual de requisitos de senha para UX de alto nível */}
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-[11px] flex flex-col gap-1 text-slate-500">
-                    <span className="font-bold text-slate-700 mb-0.5">Critérios de segurança da senha:</span>
+                  <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700 text-[11px] flex flex-col gap-1 text-slate-500 dark:text-slate-400">
+                    <span className="font-bold text-slate-700 dark:text-slate-300 mb-0.5">Critérios de segurança da senha:</span>
                     <div className="grid grid-cols-2 gap-1">
-                      <span className={`flex items-center gap-1 ${passLengthMet ? 'text-emerald-600 font-bold' : ''}`}>
+                      <span className={`flex items-center gap-1 ${passLengthMet ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
                         {passLengthMet ? '✓' : '•'} 8+ caracteres
                       </span>
-                      <span className={`flex items-center gap-1 ${passUpperMet ? 'text-emerald-600 font-bold' : ''}`}>
+                      <span className={`flex items-center gap-1 ${passUpperMet ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
                         {passUpperMet ? '✓' : '•'} Letra maiúscula
                       </span>
-                      <span className={`flex items-center gap-1 ${passNumberMet ? 'text-emerald-600 font-bold' : ''}`}>
+                      <span className={`flex items-center gap-1 ${passNumberMet ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
                         {passNumberMet ? '✓' : '•'} Pelo menos 1 número
                       </span>
-                      <span className={`flex items-center gap-1 ${passMatchMet ? 'text-emerald-600 font-bold' : ''}`}>
+                      <span className={`flex items-center gap-1 ${passMatchMet ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
                         {passMatchMet ? '✓' : '•'} Senhas coincidem
                       </span>
                     </div>
@@ -631,10 +648,10 @@ const Login = ({ onLogin }) => {
             {/* Divisor Visual */}
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
+                <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-400 font-bold tracking-wider text-[10px]">
+                <span className="bg-white dark:bg-slate-900 px-2 text-slate-400 dark:text-slate-500 font-bold tracking-wider text-[10px]">
                   ou continue com
                 </span>
               </div>
@@ -646,11 +663,11 @@ const Login = ({ onLogin }) => {
             </div>
 
             {/* Alternador de Modo no Rodapé */}
-            <div className="text-center mt-4 pt-3 border-t border-slate-100">
+            <div className="text-center mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button 
                 type="button"
                 onClick={() => toggleMode(!isRegistering)} 
-                className="text-xs text-[var(--color-brand-medium)] hover:text-[var(--color-brand-dark)] hover:underline font-bold transition-colors cursor-pointer"
+                className="text-xs text-[var(--color-brand-medium)] dark:text-blue-400 hover:text-[var(--color-brand-dark)] dark:hover:text-blue-300 hover:underline font-bold transition-colors cursor-pointer"
               >
                 {isRegistering 
                   ? "Já tem uma conta no EasyCovers? Faça login" 
@@ -659,7 +676,7 @@ const Login = ({ onLogin }) => {
             </div>
 
             {/* Termos e Rodapé */}
-            <footer className="mt-3 text-center text-[10px] text-slate-400 leading-tight">
+            <footer className="mt-3 text-center text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
               Ao continuar, você concorda com nossos Termos de Uso e Política de Privacidade.
             </footer>
           </div>

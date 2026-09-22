@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AudioProcessingScreen from '../components/AudioProcessingScreen';
+import ThemeToggle from '../components/ThemeToggle';
 
 const keyOptions = [
   "Unknown",
@@ -310,20 +311,27 @@ const Upload = ({ onAddSong, user }) => {
         backgroundColor: "var(--color-brand-light)"
       }}
     >
-      <header className="bg-white/95 backdrop-blur-md shadow-md px-8 py-3 flex justify-between items-center sticky top-0 z-30">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/assets/logo_symbol.png" 
-            alt="EasyCovers Logo" 
-            className="h-10 w-auto object-contain drop-shadow-sm"
-          />
-          <h1 className="text-2xl font-extrabold text-[var(--color-brand-deep)]">
-            EasyCovers
-          </h1>
+      <header className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-md border-b border-slate-200/80 dark:border-slate-800 px-6 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-30 transition-all">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div 
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-3 cursor-pointer group"
+            title="EasyCovers - Ir para o início"
+          >
+            <img 
+              src="/assets/logo_symbol.png" 
+              alt="EasyCovers Logo" 
+              className="h-10 w-auto object-contain drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
+            />
+            <h1 className="text-2xl font-extrabold text-[var(--color-brand-deep)]">
+              EasyCovers
+            </h1>
+          </div>
+          <ThemeToggle />
         </div>
         <button 
           onClick={() => navigate('/dashboard')} 
-          className="text-gray-600 hover:text-[var(--color-brand-medium)] font-bold flex items-center gap-2 transition"
+          className="text-slate-600 dark:text-slate-300 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 font-bold flex items-center gap-2 transition"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -332,7 +340,7 @@ const Upload = ({ onAddSong, user }) => {
         </button>
       </header>
 
-      <main className="max-w-2xl mx-auto p-8 my-8 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border-t-4 border-[var(--color-brand-medium)]">
+      <main className="max-w-2xl mx-auto p-8 my-8 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-xl border-t-4 border-[var(--color-brand-medium)] border-x border-b border-slate-200/80 dark:border-slate-800">
         <div className="flex flex-col items-center mb-6">
           <img 
             src="/assets/upload_illustration.jpg" 
@@ -340,7 +348,7 @@ const Upload = ({ onAddSong, user }) => {
             className="w-44 h-auto object-contain mb-2 rounded-xl"
           />
           <h2 className="text-2xl font-extrabold text-[var(--color-brand-deep)]">Adicionar sua música</h2>
-          <p className="text-sm text-gray-500 mt-1 text-center">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 text-center">
             Envie o áudio ou cole um link do YouTube para separar as faixas com IA
           </p>
         </div>
@@ -348,24 +356,24 @@ const Upload = ({ onAddSong, user }) => {
         <form onSubmit={handleUploadSubmit} className="flex flex-col gap-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-bold mb-2">Nome da Música</label>
+              <label className="block text-slate-700 dark:text-slate-200 font-bold mb-2">Nome da Música</label>
               <input 
                 type="text" 
                 placeholder="Ex: Comfortably Numb"
                 value={uploadForm.name} 
                 onChange={e => setUploadForm({...uploadForm, name: e.target.value})} 
-                className="w-full p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)] transition" 
+                className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-lg outline-none focus:border-[var(--color-brand-medium)] transition" 
                 required 
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-bold mb-2">Artista / Banda</label>
+              <label className="block text-slate-700 dark:text-slate-200 font-bold mb-2">Artista / Banda</label>
               <input 
                 type="text" 
                 placeholder="Ex: Pink Floyd"
                 value={uploadForm.artist} 
                 onChange={e => setUploadForm({...uploadForm, artist: e.target.value})} 
-                className="w-full p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)] transition" 
+                className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-lg outline-none focus:border-[var(--color-brand-medium)] transition" 
                 required 
               />
             </div>
@@ -373,11 +381,11 @@ const Upload = ({ onAddSong, user }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-gray-700 font-bold mb-2">Gênero</label>
+              <label className="block text-slate-700 dark:text-slate-200 font-bold mb-2">Gênero</label>
               <select 
                 value={uploadForm.genre} 
                 onChange={e => setUploadForm({...uploadForm, genre: e.target.value})} 
-                className="w-full p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)] bg-white transition"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-[var(--color-brand-medium)] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 transition"
                 required
               >
                 <option value="" disabled>Selecione um gênero</option>
@@ -396,11 +404,11 @@ const Upload = ({ onAddSong, user }) => {
             </div>
 
             <div>
-              <label className="block text-gray-700 font-bold mb-2">Seu Instrumento</label>
+              <label className="block text-slate-700 dark:text-slate-200 font-bold mb-2">Seu Instrumento</label>
               <select 
                 value={uploadForm.instrument} 
                 onChange={e => setUploadForm({...uploadForm, instrument: e.target.value})} 
-                className="w-full p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)] bg-white transition"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-[var(--color-brand-medium)] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 transition"
               >
                 <option>Guitarra</option>
                 <option>Violão</option>
@@ -412,11 +420,11 @@ const Upload = ({ onAddSong, user }) => {
             </div>              
             
             <div>
-              <label className="block text-gray-700 font-bold mb-2">Tom Original</label>
+              <label className="block text-slate-700 dark:text-slate-200 font-bold mb-2">Tom Original</label>
               <select 
                 value={uploadForm.original_key} 
                 onChange={(e) => setUploadForm({...uploadForm, original_key: e.target.value})} 
-                className="w-full p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)] bg-white transition"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-[var(--color-brand-medium)] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 transition"
               >
                 {keyOptions.map(key => (
                   <option key={key} value={key}>{key}</option>
@@ -426,12 +434,12 @@ const Upload = ({ onAddSong, user }) => {
           </div>
 
           {/* Opção 1: Importar do YouTube */}
-          <div className="mt-4 pt-6 border-t-2 border-gray-200">
+          <div className="mt-4 pt-6 border-t-2 border-slate-100 dark:border-slate-800">
             <h3 className="text-lg font-bold text-[var(--color-brand-deep)] mb-3 flex items-center gap-2">
               <img src="/assets/icons/icon_youtube.png" alt="YouTube" className="w-6 h-6 object-contain" />
               Opção A: Importar pelo YouTube
             </h3>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
               Cole o link do vídeo e preencha os dados acima para iniciar a separação por IA.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -440,13 +448,13 @@ const Upload = ({ onAddSong, user }) => {
                 placeholder="https://www.youtube.com/watch?v=..."
                 value={youtubeUrl}
                 onChange={(e) => setYoutubeUrl(e.target.value)}
-                className="flex-1 p-3 border rounded-lg outline-none focus:border-[var(--color-brand-medium)] transition"
+                className="flex-1 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-lg outline-none focus:border-[var(--color-brand-medium)] transition"
               />
               <button 
                 type="button"
                 onClick={handleYoutubeUpload} 
                 disabled={!youtubeUrl.trim()}
-                className="flex items-center justify-center gap-2.5 bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-bold transition shadow-sm shrink-0"
+                className="flex items-center justify-center gap-2.5 bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] disabled:bg-gray-300 dark:disabled:bg-slate-800 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-bold transition shadow-sm shrink-0"
               >
                 <img src="/assets/icons/icon_youtube_white.png" alt="YouTube" className="w-6 h-6 object-contain" />
                 Importar e Separar
@@ -455,15 +463,15 @@ const Upload = ({ onAddSong, user }) => {
           </div>
 
           {/* Separador Visual */}
-          <div className="flex items-center my-2 text-gray-400 font-medium">
-            <div className="flex-1 border-b border-gray-200"></div>
+          <div className="flex items-center my-2 text-slate-400 dark:text-slate-500 font-medium">
+            <div className="flex-1 border-b border-slate-200 dark:border-slate-800"></div>
             <span className="px-4 text-xs font-bold uppercase tracking-wider">ou envie um arquivo local</span>
-            <div className="flex-1 border-b border-gray-200"></div>
+            <div className="flex-1 border-b border-slate-200 dark:border-slate-800"></div>
           </div>
           
           {/* Opção 2: Upload de Arquivo Local */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-            <div className="flex-1 border-2 border-dashed border-[var(--color-brand-medium)] p-6 text-center rounded-xl bg-[var(--color-brand-light)]/30 flex flex-col justify-center items-center">
+            <div className="flex-1 border-2 border-dashed border-[var(--color-brand-medium)] p-6 text-center rounded-xl bg-[var(--color-brand-light)]/30 dark:bg-slate-800/40 flex flex-col justify-center items-center">
               <label className="cursor-pointer">
                 <span className="flex items-center gap-3 bg-[var(--color-brand-medium)] text-white px-6 py-3 rounded-xl font-bold hover:bg-[var(--color-brand-dark)] transition shadow-sm">
                   <img src="/assets/icons/icon_upload_cloud_white.png" alt="Upload" className="w-7 h-7 object-contain" />
@@ -476,9 +484,9 @@ const Upload = ({ onAddSong, user }) => {
                   className="hidden" 
                 />
               </label>
-              <p className="text-xs text-gray-600 mt-3">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-3">
                 {audioFile ? (
-                  <span className="font-bold text-[var(--color-brand-medium)]">
+                  <span className="font-bold text-[var(--color-brand-medium)] dark:text-blue-400">
                     ✓ Arquivo selecionado: {audioFile.name} ({(audioFile.size / (1024 * 1024)).toFixed(1)} MB)
                   </span>
                 ) : (
@@ -490,7 +498,7 @@ const Upload = ({ onAddSong, user }) => {
             <button 
               type="submit" 
               disabled={!audioFile}
-              className="flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl text-base font-bold transition shadow-md shrink-0 sm:w-48"
+              className="flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-slate-800 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl text-base font-bold transition shadow-md shrink-0 sm:w-48"
             >
               <img src="/assets/icons/icon_scissors_white.png" alt="Separar" className="w-6 h-6 object-contain" />
               Separar Faixas

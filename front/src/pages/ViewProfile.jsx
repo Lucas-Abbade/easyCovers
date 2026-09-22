@@ -11,6 +11,7 @@ import {
   MixerFadersIcon, 
   MusicNoteIcon 
 } from '../components/Icons';
+import ThemeToggle from '../components/ThemeToggle';
 
 const ViewProfile = ({ onLogout }) => {
   const [profile, setProfile] = useState(null);
@@ -119,16 +120,16 @@ const ViewProfile = ({ onLogout }) => {
   if (loading) {
     return (
       <div 
-        className="font-sans min-h-screen bg-repeat flex flex-col justify-center items-center p-4 text-slate-700"
+        className="font-sans min-h-screen bg-repeat flex flex-col justify-center items-center p-4 text-slate-700 dark:text-slate-200"
         style={{ 
           backgroundImage: "url('/assets/dashboard_bg.jpg')",
           backgroundSize: "320px 320px",
           backgroundColor: "var(--color-brand-light)"
         }}
       >
-        <div className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-lg flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-slate-200 border-t-[var(--color-brand-medium)] rounded-full animate-spin"></div>
-          <p className="font-bold text-slate-600 animate-pulse">Carregando perfil musical...</p>
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-8 rounded-2xl shadow-lg border border-slate-200/80 dark:border-slate-800 flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-700 border-t-[var(--color-brand-medium)] rounded-full animate-spin"></div>
+          <p className="font-bold text-slate-600 dark:text-slate-300 animate-pulse">Carregando perfil musical...</p>
         </div>
       </div>
     );
@@ -144,16 +145,16 @@ const ViewProfile = ({ onLogout }) => {
           backgroundColor: "var(--color-brand-light)"
         }}
       >
-        <div className="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-red-100">
-          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-black">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-red-100 dark:border-red-900/50">
+          <div className="w-16 h-16 bg-red-50 dark:bg-red-950/50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-black">
             !
           </div>
-          <h2 className="text-xl font-extrabold text-slate-800 mb-2">Erro ao carregar perfil</h2>
-          <p className="text-slate-600 text-sm mb-6">{error || "Perfil não encontrado."}</p>
+          <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-2">Erro ao carregar perfil</h2>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">{error || "Perfil não encontrado."}</p>
           <div className="flex gap-3 justify-center">
             <button 
               onClick={() => navigate('/dashboard')}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-all"
+              className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-sm transition-all"
             >
               Voltar ao Dashboard
             </button>
@@ -179,34 +180,37 @@ const ViewProfile = ({ onLogout }) => {
       }}
     >
       {/* 1. CABEÇALHO GLOBAL */}
-      <header className="bg-white/90 backdrop-blur-md shadow-xs border-b border-slate-200/80 px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-40 transition-all">
-        <div 
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-3 cursor-pointer group"
-          title="EasyCovers - Ir para o Dashboard"
-        >
-          <img 
-            src="/assets/logo_symbol.png" 
-            alt="EasyCovers Logo" 
-            className="h-10 w-auto object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
-          />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-[var(--color-brand-deep)] tracking-tight">
-                EasyCovers
-              </h1>
-              <span className="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md bg-blue-50 text-[var(--color-brand-medium)] border border-blue-200/60 tracking-wider">
-                Perfil
-              </span>
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-40 transition-all">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div 
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-3 cursor-pointer group"
+            title="EasyCovers - Ir para o Dashboard"
+          >
+            <img 
+              src="/assets/logo_symbol.png" 
+              alt="EasyCovers Logo" 
+              className="h-10 w-auto object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
+            />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-[var(--color-brand-deep)] tracking-tight">
+                  EasyCovers
+                </h1>
+                <span className="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 tracking-wider">
+                  Perfil
+                </span>
+              </div>
             </div>
           </div>
+          <ThemeToggle />
         </div>
 
         {/* Botões de Ação do Topo */}
         <div className="flex items-center gap-3">
           <button 
             onClick={() => navigate('/dashboard')} 
-            className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all text-sm shadow-xs active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-all text-sm shadow-xs active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -229,7 +233,7 @@ const ViewProfile = ({ onLogout }) => {
           {onLogout && (
             <button
               onClick={onLogout}
-              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+              className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors"
               title="Encerrar sessão"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -244,7 +248,7 @@ const ViewProfile = ({ onLogout }) => {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-6">
         
         {/* CARD PRINCIPAL DE IDENTIDADE / HERO DO PERFIL */}
-        <section className="bg-white rounded-3xl shadow-md border border-slate-200/80 overflow-hidden mb-8 transition-all">
+        <section className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-md border border-slate-200/80 dark:border-slate-800 overflow-hidden mb-8 transition-all">
           {/* Banner de Capa */}
           <div 
             className="h-48 sm:h-64 w-full bg-cover bg-center relative"
@@ -279,10 +283,10 @@ const ViewProfile = ({ onLogout }) => {
                   <img 
                     src={profile.profile_picture_url} 
                     alt={profile.full_name || profile.username}
-                    className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl sm:rounded-3xl object-cover border-4 border-white shadow-xl bg-white"
+                    className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl sm:rounded-3xl object-cover border-4 border-white dark:border-slate-800 shadow-xl bg-white dark:bg-slate-800"
                   />
                 ) : (
-                  <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[var(--color-brand-medium)] to-[var(--color-brand-dark)] text-white text-3xl sm:text-4xl font-black flex items-center justify-center border-4 border-white shadow-xl">
+                  <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[var(--color-brand-medium)] to-[var(--color-brand-dark)] text-white text-3xl sm:text-4xl font-black flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-xl">
                     {initials}
                   </div>
                 )}
@@ -301,7 +305,7 @@ const ViewProfile = ({ onLogout }) => {
               <div className="w-full sm:w-auto flex items-center gap-3">
                 <button 
                   onClick={() => navigate('/edit-profile')}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-black text-white text-sm font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
@@ -314,30 +318,30 @@ const ViewProfile = ({ onLogout }) => {
             {/* Nome, Handle e Badges */}
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
                   {profile.full_name || profile.username}
                 </h2>
                 {profile.experience_level && (
-                  <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-blue-50 text-[var(--color-brand-medium)] border border-blue-200/60">
+                  <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60">
                     {profile.experience_level}
                   </span>
                 )}
                 {profile.instrument && (
-                  <span className="px-3 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/70 flex items-center gap-1.5">
-                    <GuitarIcon className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="px-3 py-1 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200/70 dark:border-amber-800/60 flex items-center gap-1.5">
+                    <GuitarIcon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>{profile.instrument}</span>
                   </span>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-500">
-                <span className="text-[var(--color-brand-medium)] font-bold">
+              <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                <span className="text-[var(--color-brand-medium)] dark:text-blue-400 font-bold">
                   @{profile.username}
                 </span>
                 
                 {profile.location && (
                   <span className="flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-slate-400 dark:text-slate-500">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                     </svg>
@@ -345,7 +349,7 @@ const ViewProfile = ({ onLogout }) => {
                   </span>
                 )}
 
-                <span className="flex items-center gap-1 text-slate-400">
+                <span className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                   </svg>
@@ -355,9 +359,9 @@ const ViewProfile = ({ onLogout }) => {
 
               {/* Bio */}
               <div className="pt-2">
-                <p className="text-slate-700 text-sm sm:text-base leading-relaxed max-w-3xl whitespace-pre-line">
+                <p className="text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed max-w-3xl whitespace-pre-line">
                   {profile.bio || (
-                    <span className="text-slate-400 italic">
+                    <span className="text-slate-400 dark:text-slate-500 italic">
                       Nenhuma biografia adicionada. Clique em "Editar Perfil" para contar um pouco sobre sua trajetória musical!
                     </span>
                   )}
@@ -371,12 +375,12 @@ const ViewProfile = ({ onLogout }) => {
                     href={formatSocialUrl('spotify', profile.social_spotify)}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/70 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 group"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/60 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 group"
                     title="Ouvir no Spotify (abre em nova aba)"
                   >
-                    <SpotifyIcon className="w-3.5 h-3.5 text-emerald-600" />
+                    <SpotifyIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Spotify</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-emerald-600/70 group-hover:translate-x-0.5 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-emerald-600/70 dark:text-emerald-400/70 group-hover:translate-x-0.5 transition-transform">
                       <path fillRule="evenodd" d="M5.22 14.78a.75.75 0 001.06 0l7.22-7.22v5.69a.75.75 0 001.5 0v-7.5a.75.75 0 00-.75-.75h-7.5a.75.75 0 000 1.5h5.69l-7.22 7.22a.75.75 0 000 1.06z" clipRule="evenodd" />
                     </svg>
                   </a>
@@ -387,12 +391,12 @@ const ViewProfile = ({ onLogout }) => {
                     href={formatSocialUrl('youtube', profile.social_youtube)}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200/70 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 group"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 border border-red-200/70 dark:border-red-800/60 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 group"
                     title="Assistir no YouTube (abre em nova aba)"
                   >
-                    <YouTubeIcon className="w-3.5 h-3.5 text-red-600" />
+                    <YouTubeIcon className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                     <span>YouTube</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-red-600/70 group-hover:translate-x-0.5 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-red-600/70 dark:text-red-400/70 group-hover:translate-x-0.5 transition-transform">
                       <path fillRule="evenodd" d="M5.22 14.78a.75.75 0 001.06 0l7.22-7.22v5.69a.75.75 0 001.5 0v-7.5a.75.75 0 00-.75-.75h-7.5a.75.75 0 000 1.5h5.69l-7.22 7.22a.75.75 0 000 1.06z" clipRule="evenodd" />
                     </svg>
                   </a>
@@ -403,13 +407,13 @@ const ViewProfile = ({ onLogout }) => {
                     href={formatSocialUrl('instagram', profile.social_instagram)}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200/70 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 group"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/40 hover:bg-pink-100 dark:hover:bg-pink-900/50 text-pink-700 dark:text-pink-400 border border-pink-200/70 dark:border-pink-800/60 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 group"
                     title="Ver no Instagram (abre em nova aba)"
                   >
-                    <InstagramIcon className="w-3.5 h-3.5 text-pink-600" />
+                    <InstagramIcon className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
                     <span>Instagram</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-pink-600/70 group-hover:translate-x-0.5 transition-transform">
-                      <path fillRule="evenodd" d="M5.22 14.78a.75.75 0 001.06 0l7.22-7.22v5.69a.75.75 0 001.5 0v-7.5a.75.75 0 000 1.5h5.69l-7.22 7.22a.75.75 0 000 1.06z" clipRule="evenodd" />
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-pink-600/70 dark:text-pink-400/70 group-hover:translate-x-0.5 transition-transform">
+                      <path fillRule="evenodd" d="M5.22 14.78a.75.75 0 001.06 0l7.22-7.22v5.69a.75.75 0 001.5 0v-7.5a.75.75 0 00-.75-.75h-7.5a.75.75 0 000 1.5h5.69l-7.22 7.22a.75.75 0 000 1.06z" clipRule="evenodd" />
                     </svg>
                   </a>
                 )}
@@ -419,19 +423,19 @@ const ViewProfile = ({ onLogout }) => {
                     href={formatSocialUrl('x', profile.social_x)}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300/80 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 group"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-300/80 dark:border-slate-700 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 group"
                     title="Seguir no X / Twitter (abre em nova aba)"
                   >
-                    <XIcon className="w-3.5 h-3.5 text-slate-900" />
+                    <XIcon className="w-3.5 h-3.5 text-slate-900 dark:text-slate-100" />
                     <span>X (Twitter)</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-slate-700/70 group-hover:translate-x-0.5 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-slate-700/70 dark:text-slate-300/70 group-hover:translate-x-0.5 transition-transform">
                       <path fillRule="evenodd" d="M5.22 14.78a.75.75 0 001.06 0l7.22-7.22v5.69a.75.75 0 001.5 0v-7.5a.75.75 0 00-.75-.75h-7.5a.75.75 0 000 1.5h5.69l-7.22 7.22a.75.75 0 000 1.06z" clipRule="evenodd" />
                     </svg>
                   </a>
                 )}
 
                 {!profile.social_instagram && !profile.social_spotify && !profile.social_youtube && !profile.social_x && (
-                  <span className="text-xs text-slate-400 font-medium italic">
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium italic">
                     Nenhum link social adicionado. Clique em "Editar Perfil" para conectar suas redes.
                   </span>
                 )}
@@ -444,13 +448,13 @@ const ViewProfile = ({ onLogout }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           
           {/* Card: Gêneros Musicais Favoritos */}
-          <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-900/90 p-6 rounded-2xl shadow-xs border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-[var(--color-brand-medium)] flex items-center justify-center font-bold">
-                  <GuitarIcon className="w-4 h-4 text-[var(--color-brand-medium)]" />
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 flex items-center justify-center font-bold">
+                  <GuitarIcon className="w-4 h-4 text-[var(--color-brand-medium)] dark:text-blue-400" />
                 </div>
-                <h3 className="font-extrabold text-slate-800 text-base">Gêneros Favoritos</h3>
+                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-base">Gêneros Favoritos</h3>
               </div>
               
               {genreTags.length > 0 ? (
@@ -458,31 +462,31 @@ const ViewProfile = ({ onLogout }) => {
                   {genreTags.map((genre, idx) => (
                     <span 
                       key={idx}
-                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                      className="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors"
                     >
                       {genre}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-400 text-xs italic">Nenhum gênero especificado.</p>
+                <p className="text-slate-400 dark:text-slate-500 text-xs italic">Nenhum gênero especificado.</p>
               )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-xs text-slate-400 font-medium">
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-400 dark:text-slate-500 font-medium">
               <span>Total selecionado</span>
-              <span className="font-bold text-slate-600">{genreTags.length}</span>
+              <span className="font-bold text-slate-600 dark:text-slate-300">{genreTags.length}</span>
             </div>
           </div>
 
           {/* Card: Artistas & Influências */}
-          <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-900/90 p-6 rounded-2xl shadow-xs border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                  <StarIcon className="w-4 h-4 text-amber-600" />
+                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                  <StarIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 </div>
-                <h3 className="font-extrabold text-slate-800 text-base">Artistas Favoritos</h3>
+                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-base">Artistas Favoritos</h3>
               </div>
 
               {artistTags.length > 0 ? (
@@ -490,58 +494,58 @@ const ViewProfile = ({ onLogout }) => {
                   {artistTags.map((artist, idx) => (
                     <span 
                       key={idx}
-                      className="px-3 py-1 bg-amber-50 text-amber-800 rounded-lg text-xs font-bold border border-amber-200/50"
+                      className="px-3 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 rounded-lg text-xs font-bold border border-amber-200/50 dark:border-amber-800/60"
                     >
                       {artist}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-400 text-xs italic">Nenhum artista especificado.</p>
+                <p className="text-slate-400 dark:text-slate-500 text-xs italic">Nenhum artista especificado.</p>
               )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-xs text-slate-400 font-medium">
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-400 dark:text-slate-500 font-medium">
               <span>Influências registradas</span>
-              <span className="font-bold text-slate-600">{artistTags.length}</span>
+              <span className="font-bold text-slate-600 dark:text-slate-300">{artistTags.length}</span>
             </div>
           </div>
 
           {/* Card: Estatísticas da Biblioteca */}
-          <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-900/90 p-6 rounded-2xl shadow-xs border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-                  <ActivityChartIcon className="w-4 h-4 text-purple-600" />
+                <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                  <ActivityChartIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 </div>
-                <h3 className="font-extrabold text-slate-800 text-base">Atividade no Studio</h3>
+                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-base">Atividade no Studio</h3>
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-2">
-                <div className="p-3 bg-slate-50 rounded-xl text-center border border-slate-100">
-                  <div className="text-2xl font-black text-[var(--color-brand-medium)]">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-center border border-slate-100 dark:border-slate-800">
+                  <div className="text-2xl font-black text-[var(--color-brand-medium)] dark:text-blue-400">
                     {profile.songs_count || 0}
                   </div>
-                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     Músicas
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-xl text-center border border-slate-100">
-                  <div className="text-2xl font-black text-emerald-600">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-center border border-slate-100 dark:border-slate-800">
+                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                     {profile.instrument ? "1" : "0"}
                   </div>
-                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     Instrumento
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-100">
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => navigate('/upload')}
-                className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-[var(--color-brand-medium)] font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-1"
+                className="w-full py-2 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-[var(--color-brand-medium)] dark:text-blue-400 font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-1"
               >
                 <span>+ Enviar nova música</span>
               </button>
@@ -551,19 +555,19 @@ const ViewProfile = ({ onLogout }) => {
         </div>
 
         {/* 4. MÚSICAS RECENTES DA BIBLIOTECA */}
-        <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80">
+        <section className="bg-white dark:bg-slate-900/90 p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80 dark:border-slate-800">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
                 Músicas na Biblioteca ({profile.songs_count || 0})
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
                 Faixas processadas com stems de IA no seu estúdio
               </p>
             </div>
             <button
               onClick={() => navigate('/dashboard')}
-              className="text-xs sm:text-sm font-bold text-[var(--color-brand-medium)] hover:underline"
+              className="text-xs sm:text-sm font-bold text-[var(--color-brand-medium)] dark:text-blue-400 hover:underline"
             >
               Ver Todas no Dashboard ➔
             </button>
@@ -574,44 +578,44 @@ const ViewProfile = ({ onLogout }) => {
               {profile.recent_songs.map((song) => (
                 <div 
                   key={song.id}
-                  className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-[var(--color-brand-medium)]/50 hover:shadow-md transition-all group flex flex-col justify-between"
+                  className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 hover:border-[var(--color-brand-medium)]/50 transition-all group flex flex-col justify-between"
                 >
                   <div className="mb-3">
-                    <div className="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
-                      <span className="uppercase tracking-wider px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
+                    <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-bold mb-1">
+                      <span className="uppercase tracking-wider px-2 py-0.5 rounded bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300">
                         {song.genre || 'Gênero n/d'}
                       </span>
                       {song.original_key && song.original_key !== 'Unknown' && (
-                        <span className="text-[var(--color-brand-medium)]">
+                        <span className="text-[var(--color-brand-medium)] dark:text-blue-400">
                           Tom: {song.original_key}
                         </span>
                       )}
                     </div>
-                    <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-[var(--color-brand-medium)] truncate">
+                    <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm group-hover:text-[var(--color-brand-medium)] dark:group-hover:text-blue-400 truncate">
                       {song.name}
                     </h4>
-                    <p className="text-xs text-slate-500 truncate">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                       {song.artist || 'Artista desconhecido'}
                     </p>
                   </div>
 
                   <button
                     onClick={() => navigate('/mixer')}
-                    className="w-full py-1.5 bg-white hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-all flex items-center justify-center gap-1.5 shadow-2xs group/btn"
+                    className="w-full py-1.5 bg-white dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-600 transition-all flex items-center justify-center gap-1.5 shadow-2xs group/btn"
                   >
-                    <MixerFadersIcon className="w-3.5 h-3.5 text-slate-500 group-hover/btn:text-white transition-colors" />
+                    <MixerFadersIcon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover/btn:text-white transition-colors" />
                     <span>Abrir no Mixer</span>
                   </button>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 rounded-2xl">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[var(--color-brand-medium)] flex items-center justify-center mx-auto mb-3 shadow-xs">
-                <MusicNoteIcon className="w-6 h-6 text-[var(--color-brand-medium)]" />
+            <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 flex items-center justify-center mx-auto mb-3 shadow-xs">
+                <MusicNoteIcon className="w-6 h-6 text-[var(--color-brand-medium)] dark:text-blue-400" />
               </div>
-              <h4 className="font-bold text-slate-700 text-sm mb-1">Nenhuma música adicionada ainda</h4>
-              <p className="text-xs text-slate-400 mb-4 max-w-sm mx-auto">
+              <h4 className="font-bold text-slate-700 dark:text-slate-200 text-sm mb-1">Nenhuma música adicionada ainda</h4>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-4 max-w-sm mx-auto">
                 Faça o upload do seu primeiro arquivo de áudio ou link do YouTube para separar as faixas com IA.
               </p>
               <button
