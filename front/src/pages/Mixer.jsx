@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import * as Tone from 'tone';
 import PlayPauseButton from '../components/PlayPauseButton';
 import ThemeToggle from '../components/ThemeToggle';
+import { getGenreImage } from '../utils/genreImages';
 
 // Identidade visual cromática e metadados padronizados para os 6 stems isolados
 const STEM_CONFIG = {
@@ -88,6 +89,29 @@ const getShiftedKey = (originalKey, semitones) => {
   return `${KEY_NAMES[shiftedIndex]}${isMinor ? 'm' : ''}`;
 };
 
+// Parser para arquivos .lrc com timestamps [mm:ss.xx]
+const parseLrc = (lrcString) => {
+  if (!lrcString || typeof lrcString !== 'string') return [];
+  const lines = lrcString.split('\n');
+  const regex = /\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\](.*)/;
+  const result = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const match = regex.exec(lines[i]);
+    if (match) {
+      const minutes = parseInt(match[1], 10);
+      const seconds = parseInt(match[2], 10);
+      const fraction = match[3] ? parseFloat(`0.${match[3]}`) : 0;
+      const time = minutes * 60 + seconds + fraction;
+      const text = match[4].trim();
+      if (text) {
+        result.push({ time, text, id: i });
+      }
+    }
+  }
+  return result.sort((a, b) => a.time - b.time);
+};
+
 const Mixer = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,6 +122,13 @@ const Mixer = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  // Estados do Modo Karaokê & Letras Sincronizadas
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [lyricsData, setLyricsData] = useState(null);
+  const [isLoadingLyrics, setIsLoadingLyrics] = useState(false);
+  const [parsedLyrics, setParsedLyrics] = useState([]);
+  const lyricsContainerRef = useRef(null);
 
   // Estados de mixagem por stem (volume, mute e solo de nível DAW)
   const [volumes, setVolumes] = useState({ vocals: 80, drums: 80, bass: 80, other: 80, guitar: 80, piano: 80 });
@@ -118,6 +149,63 @@ const Mixer = () => {
   const players = useRef(null);
   const pitchShift = useRef(null);
   const progressInterval = useRef(null);
+
+  // Busca letras no backend via LRCLIB
+  useEffect(() => {
+    if (!song?.name) return;
+
+    setIsLoadingLyrics(true);
+    const trackName = encodeURIComponent(song.name);
+    const artistName = encodeURIComponent(song.artist || '');
+    const durParam = duration > 0 ? `&duration=${Math.round(duration)}` : '';
+
+    fetch(`http://localhost:8000/api/music/lyrics?track_name=${trackName}&artist_name=${artistName}${durParam}`)
+      .then(res => res.json())
+      .then(data => {
+        setLyricsData(data);
+        if (data?.synced_lyrics) {
+          setParsedLyrics(parseLrc(data.synced_lyrics));
+        }
+      })
+      .catch(err => {
+        console.warn("Erro ao buscar letra sincronizada:", err);
+      })
+      .finally(() => {
+        setIsLoadingLyrics(false);
+      });
+  }, [song?.name, song?.artist, duration]);
+
+  // Identifica a linha ativa da letra sincronizada com o Tone.Transport
+  const activeLyricIndex = useMemo(() => {
+    if (!parsedLyrics.length) return -1;
+    let active = -1;
+    for (let i = 0; i < parsedLyrics.length; i++) {
+      if (progress >= parsedLyrics[i].time - 0.2) {
+        active = i;
+      } else {
+        break;
+      }
+    }
+    return active;
+  }, [progress, parsedLyrics]);
+
+  // Auto-scroll da linha ativa no teleprompter de letras
+  useEffect(() => {
+    if (showLyrics && activeLyricIndex >= 0 && lyricsContainerRef.current) {
+      const activeEl = lyricsContainerRef.current.querySelector(`[data-lyric-index="${activeLyricIndex}"]`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [activeLyricIndex, showLyrics]);
+
+  // Pular o áudio para o timestamp exato da linha clicada
+  const handleLyricSeek = (time) => {
+    if (!isLoaded || duration <= 0) return;
+    const target = Math.max(0, Math.min(duration, time));
+    Tone.Transport.seconds = target;
+    setProgress(target);
+  };
 
   // Formatação de tempo (MM:SS)
   const formatTime = (timeInSeconds) => {
@@ -510,13 +598,13 @@ const Mixer = () => {
                 </div>
               </div>
 
-              {/* Capa Principal */}
+              {/* Capa Principal: Capa da API ou Imagem do Estilo Musical (inserção manual) */}
               <div className="relative z-10 w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shadow-lg border-2 border-[var(--color-brand-light)] bg-gradient-to-br from-blue-600 to-[var(--color-brand-deep)] flex items-center justify-center shrink-0">
                 <img
-                  src="/assets/favicon.jpg"
+                  src={song?.cover_image_url || getGenreImage(song?.genre)}
                   alt="Track Cover"
                   className="w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  onError={(e) => { e.currentTarget.src = getGenreImage(song?.genre); }}
                 />
               </div>
             </div>
@@ -787,8 +875,141 @@ const Mixer = () => {
                 <span>Limpar Solos</span>
               </button>
             )}
+
+            {/* BOTÃO MODO KARAOKÊ / LETRAS */}
+            <button
+              type="button"
+              onClick={() => setShowLyrics(prev => !prev)}
+              className={`flex items-center gap-2 px-3.5 py-2 font-bold text-xs rounded-xl border transition active:scale-95 shadow-xs cursor-pointer ${
+                showLyrics
+                  ? 'bg-purple-600 text-white border-purple-500 shadow-purple-500/20'
+                  : 'bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+              }`}
+              title="Abrir teleprompter com letra sincronizada da música"
+            >
+              <span className="text-sm">🎤</span>
+              <span>Modo Karaokê / Letras</span>
+              {lyricsData?.has_synced && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              )}
+            </button>
           </div>
         </section>
+
+        {/* BANNER DINÂMICO SE VOCAL ESTIVER MUTADO E KARAOKÊ FECHADO */}
+        {mutes.vocals && !showLyrics && (parsedLyrics.length > 0 || lyricsData?.plain_lyrics) && (
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-sm animate-fade-in">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🎤</span>
+              <div>
+                <h4 className="text-xs sm:text-sm font-black text-purple-900 dark:text-purple-200">
+                  Faixa de vocal mutada!
+                </h4>
+                <p className="text-xs text-purple-700 dark:text-purple-300">
+                  Você é a voz principal agora. Deseja acompanhar a letra sincronizada?
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowLyrics(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition shadow-xs shrink-0 cursor-pointer"
+            >
+              Abrir Karaokê
+            </button>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* 3.1 MODO KARAOKÊ & TELEPROMPTER DE LETRAS SINCRONIZADAS (LRCLIB)          */}
+        {/* ========================================================================= */}
+        {showLyrics && (
+          <section className="bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white rounded-2xl p-6 md:p-8 shadow-2xl border border-indigo-500/30 flex flex-col gap-4 relative overflow-hidden transition-all duration-300">
+            {/* Cabeçalho do Karaokê */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-xl shadow-inner">
+                  🎤
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                      Modo Karaokê & Letras Sincronizadas
+                    </h3>
+                    {lyricsData?.has_synced && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        Sincronizado
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {lyricsData?.has_synced
+                      ? "As frases acompanham a reprodução em tempo real. Clique em qualquer frase para saltar o áudio."
+                      : "Letra da música (modo texto contínuo)."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLyrics(false)}
+                  className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition border border-white/10 cursor-pointer"
+                >
+                  Minimizar ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo das Letras com Auto-Scroll */}
+            <div
+              ref={lyricsContainerRef}
+              className="relative max-h-80 md:max-h-96 overflow-y-auto px-4 py-8 flex flex-col items-center gap-4 scroll-smooth"
+            >
+              {isLoadingLyrics ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                    Buscando letra sincronizada...
+                  </p>
+                </div>
+              ) : parsedLyrics.length > 0 ? (
+                parsedLyrics.map((line, idx) => {
+                  const isActive = idx === activeLyricIndex;
+                  const isPast = idx < activeLyricIndex;
+
+                  return (
+                    <p
+                      key={line.id || idx}
+                      data-lyric-index={idx}
+                      onClick={() => handleLyricSeek(line.time)}
+                      className={`cursor-pointer text-center transition-all duration-300 px-4 py-2 rounded-xl select-none ${
+                        isActive
+                          ? 'text-white font-black text-xl sm:text-2xl scale-105 bg-purple-600/30 border border-purple-500/50 shadow-lg shadow-purple-900/40'
+                          : isPast
+                          ? 'text-slate-500 text-sm sm:text-base opacity-60 hover:opacity-90 hover:text-slate-300'
+                          : 'text-slate-400 text-sm sm:text-base opacity-80 hover:opacity-100 hover:text-slate-200'
+                      }`}
+                    >
+                      {line.text}
+                    </p>
+                  );
+                })
+              ) : lyricsData?.plain_lyrics ? (
+                <div className="whitespace-pre-line text-center text-slate-300 text-sm sm:text-base leading-relaxed py-4">
+                  {lyricsData.plain_lyrics}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center text-slate-400 gap-2">
+                  <span className="text-2xl">🎵</span>
+                  <p className="text-sm font-semibold">
+                    {lyricsData?.instrumental ? "Esta música é instrumental (sem vocais)." : "Nenhuma letra encontrada no banco para esta faixa."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* 4. CONSOLE DE MIXAGEM VERTICAL COM 6 CANAIS (STEMS) */}
         <section>
@@ -860,7 +1081,7 @@ const Mixer = () => {
                   {/* Fader Vertical de Ganho com Escala Visual */}
                   <div className="relative flex items-center justify-center h-48 w-full my-2">
                     {/* Linhas de marcação métrica (-∞, -18, -6, 0 dB) */}
-                    <div className="absolute right-3 h-40 flex flex-col justify-between text-[9px] font-bold text-gray-300 pointer-events-none select-none">
+                    <div className="absolute right-3 h-40 flex flex-col justify-between text-[9px] font-bold text-gray-300 dark:text-slate-600 pointer-events-none select-none">
                       <span>0dB</span>
                       <span>-6</span>
                       <span>-18</span>
@@ -885,7 +1106,7 @@ const Mixer = () => {
 
                   {/* Badge de Porcentagem / Decibéis */}
                   <div className="my-2">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-black bg-gray-100 text-gray-700 border border-gray-200 tabular-nums">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-black bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-700 tabular-nums">
                       {volumes[track]}%
                     </span>
                   </div>
@@ -900,7 +1121,7 @@ const Mixer = () => {
                       className={`py-2 rounded-xl text-[11px] font-black tracking-wider transition active:scale-95 cursor-pointer ${
                         isSolo
                           ? 'bg-amber-500 text-white shadow-sm ring-1 ring-amber-600'
-                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+                          : 'bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-700'
                       }`}
                     >
                       SOLO
@@ -914,7 +1135,7 @@ const Mixer = () => {
                       className={`py-2 rounded-xl text-[11px] font-black tracking-wider transition active:scale-95 cursor-pointer ${
                         isMuted
                           ? 'bg-red-600 text-white shadow-sm ring-1 ring-red-700'
-                          : 'bg-slate-800 hover:bg-slate-900 text-white'
+                          : 'bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white'
                       }`}
                     >
                       {isMuted ? 'MUDO' : 'MUTE'}
@@ -927,24 +1148,24 @@ const Mixer = () => {
         </section>
 
         {/* 5. GUIA DE ATALHOS DE TECLADO NO RODAPÉ */}
-        <footer className="mt-2 py-3 px-4 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-200 flex flex-wrap items-center justify-between text-xs text-gray-500 gap-3">
-          <div className="flex items-center gap-2">
+        <footer className="mt-2 py-3 px-4 rounded-xl bg-white/70 dark:bg-slate-900/85 backdrop-blur-sm border border-gray-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-xs text-gray-500 dark:text-slate-400 gap-3 transition-all">
+          <div className="flex flex-wrap items-center gap-2">
             <img src="/assets/icons/icon_keyboard_shortcuts.png" alt="" className="w-4 h-4 object-contain" />
-            <span className="font-bold text-gray-700">Atalhos Rápidos:</span>
-            <span className="bg-gray-200 text-gray-800 px-2 py-0.5 rounded font-mono font-bold">Espaço</span>
+            <span className="font-bold text-gray-700 dark:text-slate-200">Atalhos Rápidos:</span>
+            <span className="bg-gray-200 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold">Espaço</span>
             <span>Tocar / Pausar</span>
-            <span className="text-gray-300">•</span>
-            <span className="bg-gray-200 text-gray-800 px-2 py-0.5 rounded font-mono font-bold">← / →</span>
+            <span className="text-gray-300 dark:text-slate-600">•</span>
+            <span className="bg-gray-200 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold">← / →</span>
             <span>±5 Segundos</span>
-            <span className="text-gray-300">•</span>
-            <span className="bg-gray-200 text-gray-800 px-2 py-0.5 rounded font-mono font-bold">M</span>
+            <span className="text-gray-300 dark:text-slate-600">•</span>
+            <span className="bg-gray-200 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold">M</span>
             <span>Mutar Geral</span>
-            <span className="text-gray-300">•</span>
-            <span className="bg-gray-200 text-gray-800 px-2 py-0.5 rounded font-mono font-bold">R</span>
+            <span className="text-gray-300 dark:text-slate-600">•</span>
+            <span className="bg-gray-200 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold">R</span>
             <span>Reiniciar</span>
           </div>
 
-          <div className="text-[11px] text-gray-400">
+          <div className="text-[11px] text-gray-400 dark:text-slate-500">
             EasyCovers Audio Engine • Tone.js Web Audio API
           </div>
         </footer>

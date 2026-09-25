@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GuitarIcon } from '../components/Icons';
-import { getGenreImage } from '../utils/genreImages';
+import { getGenreImage, AVAILABLE_GENRES } from '../utils/genreImages';
 import ThemeToggle from '../components/ThemeToggle';
 
 const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
@@ -14,11 +14,8 @@ const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
   const [sortBy, setSortBy] = useState('date_desc'); // Padrão: Mais recentes
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grid'
 
-  // Lista de gêneros predefinidos (mesma do Upload)
-  const generosDisponiveis = [
-    "Rock", "Heavy Metal", "Grunge", "Indie Rock", "Rock Progressivo", 
-    "Blues Rock", "Samba", "Bossa Nova", "MPB", "Sertanejo", "Música Clássica"
-  ];
+  // Lista de gêneros predefinidos sincronizada com o catálogo
+  const generosDisponiveis = AVAILABLE_GENRES;
 
   // Processamento reativo com useMemo para filtragem e ordenação de alta performance
   const processedSongs = useMemo(() => {
@@ -504,8 +501,8 @@ const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
                   {/* Capa de Ambientação do Gênero */}
                   <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-900 shrink-0 shadow-sm border border-slate-200/80 dark:border-slate-800 group-hover:scale-105 group-hover:shadow-md transition-all duration-300">
                     <img 
-                      src={getGenreImage(song.genre)} 
-                      alt={song.genre || "Gênero musical"} 
+                      src={song.cover_image_url || getGenreImage(song.genre)} 
+                      alt={song.name || song.genre || "Capa da música"} 
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
@@ -611,8 +608,8 @@ const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
                 {/* Capa de Ambientação Superior */}
                 <div className="relative w-full h-44 sm:h-48 overflow-hidden bg-slate-900">
                   <img 
-                    src={getGenreImage(song.genre)} 
-                    alt={song.genre || "Gênero musical"} 
+                    src={song.cover_image_url || getGenreImage(song.genre)} 
+                    alt={song.name || song.genre || "Capa da música"} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />

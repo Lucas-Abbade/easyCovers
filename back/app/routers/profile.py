@@ -37,6 +37,8 @@ async def get_profile(user_id: int, db: Session = Depends(get_db)):
             "artist": song.artist,
             "genre": song.genre,
             "instrument": song.instrument,
+            "cover_image_url": song.cover_image_url,
+            "folder_path": song.folder_path,
             "original_key": song.original_key.value if hasattr(song.original_key, 'value') else str(song.original_key)
         }
         for song in (user.songs or [])
@@ -62,7 +64,16 @@ async def get_profile(user_id: int, db: Session = Depends(get_db)):
         "is_profile_completed": bool(user.is_profile_completed),
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "songs_count": len(user.songs or []),
-        "recent_songs": list(reversed(songs_data[-6:]))
+        "recent_songs": list(reversed(songs_data[-6:])),
+        "spotify_connection": {
+            "connected": bool(user.spotify_id and user.spotify_access_token),
+            "spotify_id": user.spotify_id or "",
+            "display_name": user.spotify_display_name or "",
+            "email": user.spotify_email or "",
+            "avatar_url": user.spotify_avatar_url or "",
+            "profile_url": user.spotify_profile_url or "",
+            "connected_at": user.spotify_connected_at.isoformat() if user.spotify_connected_at else None
+        }
     }
 
 

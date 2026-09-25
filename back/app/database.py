@@ -41,6 +41,17 @@ def run_migrations():
             ("social_spotify", "VARCHAR"),
             ("social_x", "VARCHAR"),
             ("created_at", "DATETIME"),
+            ("spotify_id", "VARCHAR"),
+            ("spotify_display_name", "VARCHAR"),
+            ("spotify_email", "VARCHAR"),
+            ("spotify_avatar_url", "VARCHAR"),
+            ("spotify_profile_url", "VARCHAR"),
+            ("spotify_access_token", "VARCHAR"),
+            ("spotify_refresh_token", "VARCHAR"),
+            ("spotify_token_expires_at", "DATETIME"),
+            ("spotify_connected_at", "DATETIME"),
+            ("spotify_playlists_json", "TEXT"),
+            ("spotify_liked_tracks_json", "TEXT"),
         ]
 
         for col_name, col_type in new_columns:
@@ -51,3 +62,16 @@ def run_migrations():
                     print(f"[Migration] Coluna '{col_name}' adicionada com sucesso à tabela users.")
                 except Exception as e:
                     print(f"[Migration] Aviso ao adicionar coluna '{col_name}': {e}")
+
+        # Migração da tabela songs
+        result_songs = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='songs'"))
+        if result_songs.fetchone():
+            songs_cols_info = conn.execute(text("PRAGMA table_info(songs)")).fetchall()
+            existing_songs_cols = {col[1] for col in songs_cols_info}
+            if "cover_image_url" not in existing_songs_cols:
+                try:
+                    conn.execute(text("ALTER TABLE songs ADD COLUMN cover_image_url VARCHAR"))
+                    conn.commit()
+                    print("[Migration] Coluna 'cover_image_url' adicionada com sucesso à tabela songs.")
+                except Exception as e:
+                    print(f"[Migration] Aviso ao adicionar coluna 'cover_image_url': {e}")

@@ -16,6 +16,7 @@ import {
   AlertCircleIcon
 } from '../components/Icons';
 import ThemeToggle from '../components/ThemeToggle';
+import SpotifyOnboardingModal from '../components/SpotifyOnboardingModal';
 
 const PRESET_GENRES = [
   "Rock", "Pop", "Heavy Metal", "Hard Rock", "Blues", 
@@ -39,6 +40,12 @@ const EditProfile = ({ onUpdateUser }) => {
   
   // Flag para saber se veio do cadastro/primeiro login
   const isNewUser = Boolean(location.state?.isNewUser);
+
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [spotifyConnection, setSpotifyConnection] = useState(null);
+  const [showSpotifyModal, setShowSpotifyModal] = useState(false);
+  const [isPostRegistrationModal, setIsPostRegistrationModal] = useState(false);
+  const [syncingTaste, setSyncingTaste] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -90,6 +97,8 @@ const EditProfile = ({ onUpdateUser }) => {
         return;
       }
 
+      setCurrentUserId(user.id);
+
       try {
         setLoading(true);
         const response = await fetch(`http://localhost:8000/profile/${user.id}`);
@@ -109,6 +118,10 @@ const EditProfile = ({ onUpdateUser }) => {
             social_spotify: data.social_spotify || "",
             social_x: data.social_x || "",
           });
+
+          if (data.spotify_connection) {
+            setSpotifyConnection(data.spotify_connection);
+          }
 
           if (data.profile_picture_url) {
             setPreviewUrl(data.profile_picture_url);
@@ -130,6 +143,22 @@ const EditProfile = ({ onUpdateUser }) => {
 
     loadProfile();
   }, [navigate]);
+
+  // Verifica se retornou do callback OAuth do Spotify
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('spotify') === 'connected' && currentUserId) {
+      setSuccessMessage('Conta do Spotify vinculada com sucesso! Você já pode sincronizar seus artistas e playlists.');
+      fetch(`http://localhost:8000/profile/${currentUserId}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.spotify_connection) setSpotifyConnection(d.spotify_connection);
+          if (d.social_spotify) setFormData(prev => ({ ...prev, social_spotify: d.social_spotify }));
+        })
+        .catch(() => {});
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location.search, location.pathname, currentUserId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -199,6 +228,34 @@ const EditProfile = ({ onUpdateUser }) => {
     setBannerPreviewUrl("");
   };
 
+  // Sincronizar Top Artistas e Gêneros do Spotify direto no formulário
+  const handleSyncSpotifyTaste = async () => {
+    if (!currentUserId) return;
+    setSyncingTaste(true);
+    setErrorMessage("");
+    try {
+      const res = await fetch(`http://localhost:8000/api/spotify/sync-taste/${currentUserId}`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFormData(prev => ({
+          ...prev,
+          favorite_artists: data.favorite_artists || prev.favorite_artists,
+          favorite_genres: data.favorite_genres || prev.favorite_genres,
+        }));
+        setSuccessMessage("Seus Top Artistas e Gêneros do Spotify foram importados para o perfil!");
+      } else {
+        setErrorMessage("Não foi possível importar os dados do Spotify.");
+      }
+    } catch (err) {
+      console.error("Erro ao sincronizar gostos do Spotify:", err);
+      setErrorMessage("Erro de conexão ao sincronizar com o Spotify.");
+    } finally {
+      setSyncingTaste(false);
+    }
+  };
+
   // Pular Onboarding
   const handleSkipOnboarding = async () => {
     const savedUser = localStorage.getItem('user');
@@ -216,7 +273,13 @@ const EditProfile = ({ onUpdateUser }) => {
     } catch (err) {
       console.error("Erro ao registrar conclusão do onboarding:", err);
     }
-    navigate('/dashboard');
+
+    if (!spotifyConnection?.connected) {
+      setIsPostRegistrationModal(true);
+      setShowSpotifyModal(true);
+    } else {
+      navigate('/profile');
+    }
   };
 
   // Salvar perfil completo
@@ -286,14 +349,15 @@ const EditProfile = ({ onUpdateUser }) => {
         localStorage.setItem('user', JSON.stringify(updatedUser));
         if (onUpdateUser) onUpdateUser(updatedUser);
 
-        // Se for novo usuário, redireciona ao Dashboard; se for edição normal, volta ao Perfil
-        setTimeout(() => {
-          if (isNewUser) {
-            navigate('/dashboard');
-          } else {
+        // Se a conta Spotify ainda não estiver vinculada, exibe o pop-up animado logo após criar/salvar o perfil!
+        if (isNewUser && !spotifyConnection?.connected) {
+          setIsPostRegistrationModal(true);
+          setShowSpotifyModal(true);
+        } else {
+          setTimeout(() => {
             navigate('/profile');
-          }
-        }, 600);
+          }, 500);
+        }
 
       } else {
         setErrorMessage(result.detail || "Ocorreu um erro ao salvar as alterações.");
@@ -339,6 +403,31 @@ const EditProfile = ({ onUpdateUser }) => {
       }}
     >
       
+      {/* --- MODAL ANIMADO DE BENEFÍCIOS & CONEXÃO SPOTIFY --- */}
+      <SpotifyOnboardingModal
+        isOpen={showSpotifyModal}
+        onClose={() => {
+          setShowSpotifyModal(false);
+          if (isPostRegistrationModal) {
+            setIsPostRegistrationModal(false);
+            navigate('/profile');
+          }
+        }}
+        userId={currentUserId}
+        returnTo="/profile"
+        isPostRegistration={isPostRegistrationModal}
+        onConnectedSuccess={(connData) => {
+          setSpotifyConnection(connData);
+          setShowSpotifyModal(false);
+          if (isPostRegistrationModal) {
+            setIsPostRegistrationModal(false);
+            navigate('/profile?spotify=connected');
+          } else {
+            setSuccessMessage("Conta Spotify vinculada com sucesso! Agora você pode importar seus artistas e playlists.");
+          }
+        }}
+      />
+
       {/* --- MODAL DE CORTE DE FOTO DE PERFIL --- */}
       {isCropping && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 p-4">
@@ -764,9 +853,22 @@ const EditProfile = ({ onUpdateUser }) => {
 
             {/* Artistas Favoritos */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">
-                Artistas & Bandas Favoritas
-              </label>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                  Artistas & Bandas Favoritas
+                </label>
+                {spotifyConnection?.connected && (
+                  <button
+                    type="button"
+                    onClick={handleSyncSpotifyTaste}
+                    disabled={syncingTaste}
+                    className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#1DB954] hover:underline cursor-pointer"
+                  >
+                    <SpotifyIcon className="w-3.5 h-3.5 text-[#1DB954]" color="#1DB954" />
+                    <span>{syncingTaste ? 'Importando...' : '✨ Auto-Preencher com meu Spotify'}</span>
+                  </button>
+                )}
+              </div>
               <input 
                 type="text" 
                 name="favorite_artists" 
@@ -778,6 +880,52 @@ const EditProfile = ({ onUpdateUser }) => {
               <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
                 Separe os artistas com vírgula.
               </span>
+            </div>
+
+            {/* Banner Interno de Conexão OAuth com Spotify (DNA Musical + Playlists) */}
+            <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0B192C] via-[#0F273E] to-[#0a3628] text-white border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-[#1DB954] flex items-center justify-center shrink-0 shadow-md">
+                  <SpotifyIcon className="w-6 h-6 text-white" color="#FFFFFF" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs sm:text-sm font-black text-white">
+                      {spotifyConnection?.connected
+                        ? `Conta Spotify Vinculada (${spotifyConnection.display_name || 'Ativa'})`
+                        : 'Vincular Conta do Spotify (OAuth 2.0)'}
+                    </h4>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-emerald-100/80 mt-0.5">
+                    {spotifyConnection?.connected
+                      ? 'Suas playlists e músicas curtidas já estão sincronizadas com seu perfil e tela de upload.'
+                      : 'Traga suas playlists, músicas curtidas e preencha seus artistas e gêneros favoritos automaticamente.'}
+                  </p>
+                </div>
+              </div>
+
+              {spotifyConnection?.connected ? (
+                <button
+                  type="button"
+                  onClick={handleSyncSpotifyTaste}
+                  disabled={syncingTaste}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#1DB954] hover:bg-[#18a349] text-white text-xs font-extrabold transition-all shrink-0 cursor-pointer"
+                >
+                  {syncingTaste ? 'Sincronizando...' : 'Sincronizar Artistas & Gêneros'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPostRegistrationModal(false);
+                    setShowSpotifyModal(true);
+                  }}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#1DB954] hover:bg-[#18a349] text-white text-xs font-extrabold transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <SpotifyIcon className="w-4 h-4 text-white" color="#FFFFFF" />
+                  <span>Conectar Spotify</span>
+                </button>
+              )}
             </div>
           </section>
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   SpotifyIcon, 
   YouTubeIcon, 
@@ -9,55 +9,81 @@ import {
   StarIcon, 
   ActivityChartIcon, 
   MixerFadersIcon, 
-  MusicNoteIcon 
+  MusicNoteIcon,
+  CheckCircleIcon
 } from '../components/Icons';
 import ThemeToggle from '../components/ThemeToggle';
+import SpotifyHubSection from '../components/SpotifyHubSection';
+import SpotifyOnboardingModal from '../components/SpotifyOnboardingModal';
 
 const ViewProfile = ({ onLogout }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showSpotifyModal, setShowSpotifyModal] = useState(false);
+  const [isPostRegistrationModal, setIsPostRegistrationModal] = useState(false);
+  const [spotifyBannerMsg, setSpotifyBannerMsg] = useState('');
+
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const loadProfile = useCallback(async (silent = false) => {
+    const savedUser = localStorage.getItem('user');
+    if (!savedUser) {
+      navigate('/');
+      return;
+    }
+
+    const user = JSON.parse(savedUser);
+    if (!user || !user.id) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      if (!silent) setLoading(true);
+      const response = await fetch(`http://localhost:8000/profile/${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+        
+        // Mantém o cache local atualizado com a foto mais recente
+        if (data.profile_picture_url !== user.profile_picture_url || data.username !== user.username) {
+          const updated = { ...user, username: data.username, profile_picture_url: data.profile_picture_url };
+          localStorage.setItem('user', JSON.stringify(updated));
+        }
+      } else {
+        setError("Não foi possível carregar os dados do perfil.");
+      }
+    } catch (err) {
+      console.error("Erro ao carregar perfil:", err);
+      setError("Erro ao conectar com o servidor.");
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [navigate]);
 
   useEffect(() => {
-    const loadProfile = async () => {
-      const savedUser = localStorage.getItem('user');
-      if (!savedUser) {
-        navigate('/');
-        return;
-      }
-
-      const user = JSON.parse(savedUser);
-      if (!user || !user.id) {
-        navigate('/');
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const response = await fetch(`http://localhost:8000/profile/${user.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setProfile(data);
-          
-          // Mantém o cache local atualizado com a foto mais recente
-          if (data.profile_picture_url !== user.profile_picture_url || data.username !== user.username) {
-            const updated = { ...user, username: data.username, profile_picture_url: data.profile_picture_url };
-            localStorage.setItem('user', JSON.stringify(updated));
-          }
-        } else {
-          setError("Não foi possível carregar os dados do perfil.");
-        }
-      } catch (err) {
-        console.error("Erro ao carregar perfil:", err);
-        setError("Erro ao conectar com o servidor.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadProfile();
-  }, [navigate]);
+  }, [loadProfile]);
+
+  // Verifica retorno do callback OAuth do Spotify ou gatilho pós-criação de perfil
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('spotify') === 'connected') {
+      setSpotifyBannerMsg('Sua conta do Spotify foi vinculada com sucesso! Suas playlists e músicas curtidas já estão disponíveis abaixo.');
+      loadProfile(true);
+      window.history.replaceState({}, document.title, location.pathname);
+    } else if (params.get('spotify_error')) {
+      setSpotifyBannerMsg('Não foi possível concluir a autorização com o Spotify. Tente novamente.');
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+
+    if (location.state?.showSpotifyOnboarding) {
+      setIsPostRegistrationModal(true);
+      setShowSpotifyModal(true);
+    }
+  }, [location.search, location.pathname, location.state, loadProfile]);
 
   // Formatação de data de ingresso
   const formattedMemberDate = React.useMemo(() => {
@@ -244,9 +270,44 @@ const ViewProfile = ({ onLogout }) => {
         </div>
       </header>
 
+      {/* MODAL ANIMADO DE BENEFÍCIOS & CONEXÃO SPOTIFY */}
+      <SpotifyOnboardingModal
+        isOpen={showSpotifyModal}
+        onClose={() => {
+          setShowSpotifyModal(false);
+          setIsPostRegistrationModal(false);
+        }}
+        userId={profile.id}
+        returnTo="/profile"
+        isPostRegistration={isPostRegistrationModal}
+        onConnectedSuccess={() => {
+          setShowSpotifyModal(false);
+          setIsPostRegistrationModal(false);
+          setSpotifyBannerMsg('Conta Spotify vinculada com sucesso! Suas playlists e músicas curtidas já estão disponíveis abaixo.');
+          loadProfile(true);
+        }}
+      />
+
       {/* 2. ÁREA PRINCIPAL */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-6">
         
+        {/* Banner de confirmação de conexão Spotify */}
+        {spotifyBannerMsg && (
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm font-bold flex items-center justify-between gap-3 shadow-sm animate-fade-in-scale">
+            <div className="flex items-center gap-2.5">
+              <CheckCircleIcon className="w-5 h-5 text-[#1DB954] shrink-0" />
+              <span>{spotifyBannerMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSpotifyBannerMsg('')}
+              className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 font-black px-2"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* CARD PRINCIPAL DE IDENTIDADE / HERO DO PERFIL */}
         <section className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-md border border-slate-200/80 dark:border-slate-800 overflow-hidden mb-8 transition-all">
           {/* Banner de Capa */}
@@ -301,8 +362,22 @@ const ViewProfile = ({ onLogout }) => {
                 </button>
               </div>
 
-              {/* Botão de Edição Principal no Corpo */}
-              <div className="w-full sm:w-auto flex items-center gap-3">
+              {/* Botão de Edição Principal e Ação Rápida Spotify no Corpo */}
+              <div className="w-full sm:w-auto flex flex-wrap items-center gap-2.5">
+                {!profile.spotify_connection?.connected && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPostRegistrationModal(false);
+                      setShowSpotifyModal(true);
+                    }}
+                    className="w-full sm:w-auto px-4 py-2.5 bg-[#1DB954] hover:bg-[#18a349] text-white text-xs sm:text-sm font-extrabold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                  >
+                    <SpotifyIcon className="w-4 h-4 text-white" color="#FFFFFF" />
+                    <span>Vincular Spotify</span>
+                  </button>
+                )}
+
                 <button 
                   onClick={() => navigate('/edit-profile')}
                   className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
@@ -330,6 +405,12 @@ const ViewProfile = ({ onLogout }) => {
                   <span className="px-3 py-1 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200/70 dark:border-amber-800/60 flex items-center gap-1.5">
                     <GuitarIcon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>{profile.instrument}</span>
+                  </span>
+                )}
+                {profile.spotify_connection?.connected && (
+                  <span className="px-3 py-1 rounded-lg text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/60 text-[#1DB954] border border-emerald-300/70 dark:border-emerald-800/70 flex items-center gap-1.5">
+                    <SpotifyIcon className="w-3.5 h-3.5 text-[#1DB954]" color="#1DB954" />
+                    <span>Spotify Conectado</span>
                   </span>
                 )}
               </div>
@@ -554,6 +635,17 @@ const ViewProfile = ({ onLogout }) => {
 
         </div>
 
+        {/* 3.5. HUB DE INTEGRAÇÃO SPOTIFY (PLAYLISTS, MÚSICAS CURTIDAS E SETLISTS) */}
+        <SpotifyHubSection
+          userId={profile.id}
+          spotifyConnection={profile.spotify_connection}
+          onOpenConnectModal={() => {
+            setIsPostRegistrationModal(false);
+            setShowSpotifyModal(true);
+          }}
+          onProfileRefresh={() => loadProfile(true)}
+        />
+
         {/* 4. MÚSICAS RECENTES DA BIBLIOTECA */}
         <section className="bg-white dark:bg-slate-900/90 p-6 sm:p-8 rounded-3xl shadow-xs border border-slate-200/80 dark:border-slate-800">
           <div className="flex items-center justify-between mb-6">
@@ -600,7 +692,7 @@ const ViewProfile = ({ onLogout }) => {
                   </div>
 
                   <button
-                    onClick={() => navigate('/mixer')}
+                    onClick={() => navigate('/mixer', { state: { song: { ...song, folder: song.folder_path } } })}
                     className="w-full py-1.5 bg-white dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-600 transition-all flex items-center justify-center gap-1.5 shadow-2xs group/btn"
                   >
                     <MixerFadersIcon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover/btn:text-white transition-colors" />

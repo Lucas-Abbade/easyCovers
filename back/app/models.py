@@ -59,6 +59,19 @@ class User(Base):
     is_profile_completed = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=True)
 
+    # Integração OAuth 2.0 Spotify
+    spotify_id = Column(String, nullable=True, index=True)
+    spotify_display_name = Column(String, nullable=True)
+    spotify_email = Column(String, nullable=True)
+    spotify_avatar_url = Column(String, nullable=True)
+    spotify_profile_url = Column(String, nullable=True)
+    spotify_access_token = Column(String, nullable=True)
+    spotify_refresh_token = Column(String, nullable=True)
+    spotify_token_expires_at = Column(DateTime, nullable=True)
+    spotify_connected_at = Column(DateTime, nullable=True)
+    spotify_playlists_json = Column(String, nullable=True)
+    spotify_liked_tracks_json = Column(String, nullable=True)
+
     songs = relationship("Song", back_populates="owner")
     
 class Song(Base):
@@ -71,6 +84,7 @@ class Song(Base):
     original_key = Column(Enum(MusicalKey), default=MusicalKey.UNKNOWN, nullable=False)
     instrument = Column(String)
     folder_path = Column(String)
+    cover_image_url = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     
     owner = relationship("User", back_populates="songs")

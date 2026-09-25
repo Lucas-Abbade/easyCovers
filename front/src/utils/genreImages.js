@@ -11,12 +11,20 @@ export const GENRE_IMAGES = {
   "Indie Rock": "/assets/genres/genre_indie_rock.jpg",
   "Rock Progressivo": "/assets/genres/genre_rock_progressivo.jpg",
   "Blues Rock": "/assets/genres/genre_blues_rock.jpg",
+  "Pop": "/assets/genres/genre_default.jpg",
   "Samba": "/assets/genres/genre_samba.jpg",
   "Bossa Nova": "/assets/genres/genre_bossa_nova.jpg",
   "MPB": "/assets/genres/genre_mpb.jpg",
   "Sertanejo": "/assets/genres/genre_sertanejo.jpg",
+  "Eletrônica": "/assets/genres/genre_default.jpg",
+  "Jazz": "/assets/genres/genre_bossa_nova.jpg",
+  "R&B / Soul": "/assets/genres/genre_blues_rock.jpg",
+  "Hip-Hop / Rap": "/assets/genres/genre_default.jpg",
+  "Reggae": "/assets/genres/genre_mpb.jpg",
   "Música Clássica": "/assets/genres/genre_musica_classica.jpg",
 };
+
+export const AVAILABLE_GENRES = Object.keys(GENRE_IMAGES);
 
 export const DEFAULT_GENRE_IMAGE = "/assets/genres/genre_default.jpg";
 

@@ -21,6 +21,16 @@ class SongSummary(BaseModel):
     artist: Optional[str] = None
     genre: Optional[str] = None
     instrument: Optional[str] = None
+    cover_image_url: Optional[str] = None
+
+class SpotifyConnectionStatus(BaseModel):
+    connected: bool = False
+    spotify_id: Optional[str] = ""
+    display_name: Optional[str] = ""
+    email: Optional[str] = ""
+    avatar_url: Optional[str] = ""
+    profile_url: Optional[str] = ""
+    connected_at: Optional[datetime] = None
 
 class UserProfileResponse(BaseModel):
     id: int
@@ -43,6 +53,7 @@ class UserProfileResponse(BaseModel):
     created_at: Optional[datetime] = None
     songs_count: int = 0
     recent_songs: List[SongSummary] = []
+    spotify_connection: Optional[SpotifyConnectionStatus] = None
 
 class UserProfileUpdate(BaseModel):
     full_name: Optional[str] = None
