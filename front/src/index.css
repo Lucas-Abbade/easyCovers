@@ -7,6 +7,7 @@
   --color-brand-medium: #2B69E6;
   --color-brand-dark: #1A3F99;
   --color-brand-deep: #0E1F4C;
+  --color-slate-850: #152033;
 }
 
 :root {
@@ -15,6 +16,7 @@
   --color-brand-dark: #1A3F99;
   --color-brand-deep: #0E1F4C;
   --page-bg-color: #D1E8FF;
+  color-scheme: light;
 }
 
 .dark {
@@ -22,6 +24,50 @@
   --color-brand-deep: #F1F5F9;
   --page-bg-color: #070D1D;
   color-scheme: dark;
+}
+
+/* Garante que inputs, selects e textareas respeitem o esquema escuro nativo */
+.dark input,
+.dark textarea,
+.dark select {
+  color-scheme: dark;
+}
+
+/* Corrige caixas brancas forçadas pelo autopreenchimento (autofill) do navegador */
+input:autofill,
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:autofill,
+textarea:-webkit-autofill,
+select:autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #1e293b;
+  caret-color: #1e293b;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 0 0 100vmax #f8fafc inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:autofill,
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark textarea:autofill,
+.dark textarea:-webkit-autofill,
+.dark select:autofill,
+.dark select:-webkit-autofill {
+  -webkit-text-fill-color: #f8fafc;
+  caret-color: #f8fafc;
+  border: 1px solid #334155;
+  box-shadow: 0 0 0 100vmax #1e293b inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input:autofill:focus-visible,
+input:-webkit-autofill:focus-visible {
+  outline: 2px solid var(--color-brand-medium);
+  outline-offset: 1px;
 }
 
 /* Transições suaves para background e texto */

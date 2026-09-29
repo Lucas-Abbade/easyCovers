@@ -25,15 +25,51 @@ const Login = ({ onLogin }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [googleSdkError, setGoogleSdkError] = useState(false);
+  const [originWarning, setOriginWarning] = useState('');
 
   const navigate = useNavigate();
-  const GOOGLE_CLIENT_ID = '306538057431-96v86vvcrqvi556j85o2gad7mr5irf45.apps.googleusercontent.com';
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '306538057431-96v86vvcrqvi556j85o2gad7mr5irf45.apps.googleusercontent.com';
   const googleInitialized = useRef(false);
+  const googleCallbackRef = useRef(null);
+
+  // Extrai mensagem de erro legível (evita crash do React caso o FastAPI retorne array 422 em data.detail)
+  const extractErrorDetail = (data, fallbackMsg) => {
+    if (!data) return fallbackMsg;
+    if (typeof data.detail === 'string' && data.detail.trim()) {
+      return data.detail;
+    }
+    if (Array.isArray(data.detail) && data.detail.length > 0) {
+      const first = data.detail[0];
+      if (typeof first === 'string') return first;
+      if (first?.msg) return `Dados inválidos: ${first.msg}`;
+    }
+    return fallbackMsg;
+  };
+
+  // Garante que o acesso local ocorra em localhost:5173 (origem autorizada no Google Cloud OAuth)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const { hostname, port, protocol, pathname, search, hash } = window.location;
+    if (hostname === '127.0.0.1') {
+      const targetPort = port ? `:${port}` : '';
+      window.location.replace(`${protocol}//localhost${targetPort}${pathname}${search}${hash}`);
+      return;
+    }
+    if (hostname === 'localhost' && port && port !== '5173') {
+      setOriginWarning(
+        `Atenção: você está acessando pela porta ${port}. O login com Google requer http://localhost:5173.`
+      );
+    }
+  }, []);
 
   // Callback de autenticação via Google OAuth
   const handleGoogleResponse = useCallback(async (response) => {
     const id_token = response?.credential;
-    if (!id_token) return;
+    if (!id_token) {
+      setErrorMessage('Não foi possível obter a credencial do Google. Tente novamente.');
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage('');
@@ -45,12 +81,13 @@ const Login = ({ onLogin }) => {
         body: JSON.stringify({ id_token })
       });
 
-      const data = await res.json();
-      if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.id) {
         const userData = {
           id: data.id,
           email: data.email,
           username: data.username,
+          full_name: data.full_name || '',
           profile_picture_url: data.profile_picture_url || '',
           is_profile_completed: Boolean(data.is_profile_completed)
         };
@@ -61,49 +98,82 @@ const Login = ({ onLogin }) => {
           navigate('/dashboard');
         }
       } else {
-        setErrorMessage(data.detail || 'Falha no login com Google.');
+        setErrorMessage(extractErrorDetail(data, 'Falha na autenticação com o Google. Tente novamente.'));
       }
     } catch (err) {
-      console.error(err);
-      setErrorMessage('Erro ao conectar com o servidor para login com Google.');
+      console.error('Erro no login com Google:', err);
+      setErrorMessage('Não foi possível conectar ao servidor (porta 8000). Verifique se o backend está em execução.');
     } finally {
       setIsLoading(false);
     }
   }, [navigate, onLogin]);
 
-  // Função para renderizar o botão do Google
+  // Mantém a referência do callback sempre atualizada para evitar stale closures no SDK do Google
+  useEffect(() => {
+    googleCallbackRef.current = handleGoogleResponse;
+  }, [handleGoogleResponse]);
+
+  // Função para renderizar o botão do Google com largura numérica válida em pixels (200..400)
   const renderGoogleButton = useCallback(() => {
-    if (window.google?.accounts?.id) {
-      const el = document.getElementById('googleSignInDiv');
-      if (el) {
-        el.innerHTML = '';
-        window.google.accounts.id.renderButton(el, {
-          theme: 'outline',
-          size: 'large',
-          width: '100%',
-          text: isRegistering ? 'signup_with' : 'signin_with',
-          shape: 'pill'
-        });
-      }
+    if (!window.google?.accounts?.id) return;
+    const el = document.getElementById('googleSignInDiv');
+    if (!el) return;
+
+    try {
+      const containerWidth = el.clientWidth || el.parentElement?.clientWidth || 360;
+      const validPixelWidth = Math.min(Math.max(Math.round(containerWidth), 200), 400);
+
+      el.innerHTML = '';
+      window.google.accounts.id.renderButton(el, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        width: validPixelWidth,
+        text: isRegistering ? 'signup_with' : 'signin_with',
+        shape: 'pill',
+        logo_alignment: 'left'
+      });
+      setGoogleSdkError(false);
+    } catch (err) {
+      console.error('Erro ao renderizar botão do Google:', err);
+      setGoogleSdkError(true);
     }
   }, [isRegistering]);
 
-  // Inicialização do SDK do Google
+  // Inicialização resiliente do SDK do Google Identity Services
+  const initAndRenderGoogle = useCallback(() => {
+    if (!window.google?.accounts?.id) return;
+
+    try {
+      if (!googleInitialized.current) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: (resp) => googleCallbackRef.current?.(resp),
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        googleInitialized.current = true;
+      }
+      setGoogleSdkError(false);
+      if (showAuthForm) {
+        renderGoogleButton();
+      }
+    } catch (err) {
+      console.error('Erro ao inicializar Google Identity Services:', err);
+      setGoogleSdkError(true);
+    }
+  }, [GOOGLE_CLIENT_ID, renderGoogleButton, showAuthForm]);
+
   useEffect(() => {
     const scriptId = 'google-gsi-script';
     let script = document.getElementById(scriptId);
 
-    const initializeGoogle = () => {
-      if (window.google?.accounts?.id && !googleInitialized.current) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleResponse
-        });
-        googleInitialized.current = true;
-      }
-      if (showAuthForm) {
-        renderGoogleButton();
-      }
+    const handleScriptLoad = () => {
+      initAndRenderGoogle();
+    };
+
+    const handleScriptError = () => {
+      setGoogleSdkError(true);
     };
 
     if (!script) {
@@ -112,32 +182,50 @@ const Login = ({ onLogin }) => {
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.defer = true;
-      script.onload = initializeGoogle;
+      script.addEventListener('load', handleScriptLoad);
+      script.addEventListener('error', handleScriptError);
       document.body.appendChild(script);
+    } else if (window.google?.accounts?.id) {
+      initAndRenderGoogle();
     } else {
-      initializeGoogle();
+      script.addEventListener('load', handleScriptLoad);
+      script.addEventListener('error', handleScriptError);
     }
-  }, [handleGoogleResponse, renderGoogleButton, showAuthForm]);
 
-  // Re-renderiza o botão do Google quando o usuário abre o formulário ou troca o modo
+    return () => {
+      if (script) {
+        script.removeEventListener('load', handleScriptLoad);
+        script.removeEventListener('error', handleScriptError);
+      }
+    };
+  }, [initAndRenderGoogle]);
+
+  // Re-renderiza o botão do Google quando o usuário abre o formulário ou troca o modo (Entrar / Cadastrar)
   useEffect(() => {
-    if (showAuthForm) {
+    if (showAuthForm && window.google?.accounts?.id) {
       const timer = setTimeout(() => {
-        renderGoogleButton();
-      }, 50);
+        initAndRenderGoogle();
+      }, 40);
       return () => clearTimeout(timer);
     }
-  }, [showAuthForm, isRegistering, renderGoogleButton]);
+  }, [showAuthForm, isRegistering, initAndRenderGoogle]);
 
   // Submissão do formulário de autenticação (Login ou Cadastro)
   const handleAuth = async (e) => {
     e.preventDefault();
     setErrorMessage('');
 
+    const normalizedEmail = email.trim().toLowerCase();
+    const trimmedUsername = username.trim();
+
     // Validações rigorosas para cadastro
     if (isRegistering) {
-      if (!username.trim() || !email.trim() || !password || !confirmPassword) {
+      if (!trimmedUsername || !normalizedEmail || !password || !confirmPassword) {
         setErrorMessage("Por favor, preencha todos os campos.");
+        return;
+      }
+      if (trimmedUsername.length < 3) {
+        setErrorMessage("O nome de usuário deve ter pelo menos 3 caracteres.");
         return;
       }
       if (password !== confirmPassword) {
@@ -152,7 +240,7 @@ const Login = ({ onLogin }) => {
         return;
       }
     } else {
-      if (!email.trim() || !password) {
+      if (!normalizedEmail || !password) {
         setErrorMessage("Informe seu e-mail e senha para acessar.");
         return;
       }
@@ -160,8 +248,8 @@ const Login = ({ onLogin }) => {
 
     const endpoint = isRegistering ? "register" : "login";
     const payload = isRegistering 
-      ? { username: username.trim(), email: email.trim(), password } 
-      : { email: email.trim(), password };
+      ? { username: trimmedUsername, email: normalizedEmail, password } 
+      : { email: normalizedEmail, password };
 
     setIsLoading(true);
 
@@ -172,13 +260,14 @@ const Login = ({ onLogin }) => {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
-      if (response.ok) {
+      if (response.ok && data && data.id) {
         const userData = {
           id: data.id,
           email: data.email,
           username: data.username,
+          full_name: data.full_name || '',
           profile_picture_url: data.profile_picture_url || '',
           is_profile_completed: Boolean(data.is_profile_completed)
         };
@@ -192,11 +281,11 @@ const Login = ({ onLogin }) => {
           navigate('/dashboard');
         }
       } else {
-        setErrorMessage(data.detail || "Não foi possível realizar a autenticação.");
+        setErrorMessage(extractErrorDetail(data, "Não foi possível realizar a autenticação."));
       }
     } catch (error) {
       console.error(error);
-      setErrorMessage("Erro ao conectar com o servidor. Verifique sua conexão e tente novamente.");
+      setErrorMessage("Erro ao conectar com o servidor (porta 8000). Verifique se o backend está rodando e tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -658,8 +747,48 @@ const Login = ({ onLogin }) => {
             </div>
 
             {/* Botão Oficial do Google Sign-In SDK */}
-            <div className="flex flex-col gap-2">
-              <div id="googleSignInDiv" className="w-full min-h-[44px] flex justify-center"></div>
+            <div className="flex flex-col gap-2 items-center">
+              {originWarning && (
+                <div className="w-full p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 rounded-xl text-[11px] font-medium text-center leading-relaxed">
+                  {originWarning}{' '}
+                  <a
+                    href="http://localhost:5173"
+                    className="underline font-bold hover:text-amber-900 dark:hover:text-amber-200"
+                  >
+                    Abrir em localhost:5173
+                  </a>
+                </div>
+              )}
+
+              <div id="googleSignInDiv" className="w-full min-h-[44px] flex justify-center items-center"></div>
+
+              {googleSdkError && (
+                <div className="w-full p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 rounded-xl text-xs flex flex-col items-center gap-2 text-center">
+                  <span>
+                    Não foi possível carregar o botão do Google. Verifique sua conexão ou se algum bloqueador de anúncios (AdBlock / Brave Shields) está bloqueando <strong>accounts.google.com</strong>.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGoogleSdkError(false);
+                      const existing = document.getElementById('google-gsi-script');
+                      if (existing) existing.remove();
+                      googleInitialized.current = false;
+                      const s = document.createElement('script');
+                      s.id = 'google-gsi-script';
+                      s.src = 'https://accounts.google.com/gsi/client';
+                      s.async = true;
+                      s.defer = true;
+                      s.onload = () => initAndRenderGoogle();
+                      s.onerror = () => setGoogleSdkError(true);
+                      document.body.appendChild(s);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition-colors cursor-pointer"
+                  >
+                    Tentar carregar Google novamente
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Alternador de Modo no Rodapé */}

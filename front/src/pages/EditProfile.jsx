@@ -34,7 +34,7 @@ const EXPERIENCE_LEVELS = [
   "Iniciante", "Intermediário", "Avançado", "Profissional / Produtor"
 ];
 
-const EditProfile = ({ onUpdateUser }) => {
+const EditProfile = ({ user: propUser, onUpdateUser }) => {
   const navigate = useNavigate();
   const location = useLocation(); 
   
@@ -74,7 +74,11 @@ const EditProfile = ({ onUpdateUser }) => {
   // Estados para Banner de Capa
   const [bannerPic, setBannerPic] = useState(null);
   const [bannerPreviewUrl, setBannerPreviewUrl] = useState("");
+  const [selectedBannerFile, setSelectedBannerFile] = useState(null);
+  const [isCroppingBanner, setIsCroppingBanner] = useState(false);
+  const [bannerScale, setBannerScale] = useState(1);
   const [removeBanner, setRemoveBanner] = useState(false);
+  const bannerEditorRef = useRef(null);
 
   // Estados de feedback e controle
   const [loading, setLoading] = useState(true);
@@ -82,21 +86,25 @@ const EditProfile = ({ onUpdateUser }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Carrega dados existentes do usuário
+  // Carrega dados existentes do usuário (prioriza a prop `user` do App e usa localStorage como fallback)
   useEffect(() => {
     const loadProfile = async () => {
-      const savedUser = localStorage.getItem('user');
-      if (!savedUser) {
+      let activeUser = propUser;
+      if (!activeUser || !activeUser.id) {
+        try {
+          const savedUser = localStorage.getItem('user');
+          activeUser = savedUser ? JSON.parse(savedUser) : null;
+        } catch {
+          activeUser = null;
+        }
+      }
+
+      if (!activeUser || !activeUser.id) {
         navigate('/');
         return;
       }
 
-      const user = JSON.parse(savedUser);
-      if (!user || !user.id) {
-        navigate('/');
-        return;
-      }
-
+      const user = activeUser;
       setCurrentUserId(user.id);
 
       try {
@@ -142,7 +150,7 @@ const EditProfile = ({ onUpdateUser }) => {
     };
 
     loadProfile();
-  }, [navigate]);
+  }, [navigate, propUser]);
 
   // Verifica se retornou do callback OAuth do Spotify
   useEffect(() => {
@@ -190,6 +198,7 @@ const EditProfile = ({ onUpdateUser }) => {
       setScale(1);
       setRemovePicture(false);
     }
+    e.target.value = "";
   };
 
   const handleSaveCrop = () => {
@@ -211,14 +220,42 @@ const EditProfile = ({ onUpdateUser }) => {
     setPreviewUrl(`https://ui-avatars.com/api/?name=EC&background=2B69E6&color=fff&size=150`);
   };
 
-  // Manipulação de imagem de banner
+  // Manipulação de imagem de banner (Upload + Modal de Corte)
   const handleBannerChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setBannerPic(file);
+      setSelectedBannerFile(file);
+      setIsCroppingBanner(true);
+      setBannerScale(1);
       setRemoveBanner(false);
-      const url = URL.createObjectURL(file);
-      setBannerPreviewUrl(url);
+    }
+    e.target.value = "";
+  };
+
+  const handleSaveBannerCrop = () => {
+    if (bannerEditorRef.current) {
+      let croppedCanvas;
+      try {
+        croppedCanvas = bannerEditorRef.current.getImage();
+      } catch {
+        croppedCanvas = bannerEditorRef.current.getImageScaledToCanvas();
+      }
+
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = 1200;
+      outputCanvas.height = 400;
+      const ctx = outputCanvas.getContext('2d');
+      ctx.drawImage(croppedCanvas, 0, 0, 1200, 400);
+
+      setBannerPreviewUrl(outputCanvas.toDataURL());
+      outputCanvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], "banner_pic.png", { type: "image/png" });
+          setBannerPic(file);
+          setRemoveBanner(false);
+        }
+      });
+      setIsCroppingBanner(false);
     }
   };
 
@@ -479,6 +516,70 @@ const EditProfile = ({ onUpdateUser }) => {
               <button 
                 type="button"
                 onClick={handleSaveCrop}
+                className="flex-1 py-2.5 px-4 bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] text-white font-bold rounded-xl transition-all shadow-md text-xs active:scale-95"
+              >
+                Aplicar Corte
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL DE CORTE DE BANNER DE CAPA --- */}
+      {isCroppingBanner && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-2xl flex flex-col items-center max-w-lg w-full animate-fade-in border border-slate-100 dark:border-slate-800">
+            <h3 className="text-lg font-black mb-1 text-slate-800 dark:text-slate-100 tracking-tight">
+              Ajustar Capa do Perfil
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-medium text-center">
+              Arraste a imagem para posicionar e ajuste o zoom.
+            </p>
+            
+            <div className="border-4 border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-inner bg-slate-50 dark:bg-slate-800 max-w-full flex justify-center">
+              <AvatarEditor
+                ref={bannerEditorRef}
+                image={selectedBannerFile}
+                width={420}
+                height={140}
+                border={20}
+                borderRadius={12}
+                color={[15, 23, 42, 0.7]}
+                scale={bannerScale}
+                rotate={0}
+                style={{ maxWidth: '100%', height: 'auto' }}
+              />
+            </div>
+            
+            {/* Controle de Zoom */}
+            <div className="w-full mt-5 flex flex-col items-center">
+              <div className="flex justify-between w-full text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                <span>Zoom</span>
+                <span>{Math.round(bannerScale * 100)}%</span>
+              </div>
+              <input 
+                type="range" 
+                min="1" 
+                max="3" 
+                step="0.02" 
+                value={bannerScale} 
+                onChange={(e) => setBannerScale(parseFloat(e.target.value))}
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--color-brand-medium)]"
+              />
+            </div>
+
+            {/* Botões do Modal */}
+            <div className="flex gap-3 w-full mt-6">
+              <button 
+                type="button"
+                onClick={() => setIsCroppingBanner(false)}
+                className="flex-1 py-2.5 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-xs active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button"
+                onClick={handleSaveBannerCrop}
                 className="flex-1 py-2.5 px-4 bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] text-white font-bold rounded-xl transition-all shadow-md text-xs active:scale-95"
               >
                 Aplicar Corte

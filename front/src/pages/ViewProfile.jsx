@@ -16,7 +16,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import SpotifyHubSection from '../components/SpotifyHubSection';
 import SpotifyOnboardingModal from '../components/SpotifyOnboardingModal';
 
-const ViewProfile = ({ onLogout }) => {
+const ViewProfile = ({ user: propUser, onLogout, onUpdateUser }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,17 +28,22 @@ const ViewProfile = ({ onLogout }) => {
   const location = useLocation();
 
   const loadProfile = useCallback(async (silent = false) => {
-    const savedUser = localStorage.getItem('user');
-    if (!savedUser) {
+    let activeUser = propUser;
+    if (!activeUser || !activeUser.id) {
+      try {
+        const savedUser = localStorage.getItem('user');
+        activeUser = savedUser ? JSON.parse(savedUser) : null;
+      } catch {
+        activeUser = null;
+      }
+    }
+
+    if (!activeUser || !activeUser.id) {
       navigate('/');
       return;
     }
 
-    const user = JSON.parse(savedUser);
-    if (!user || !user.id) {
-      navigate('/');
-      return;
-    }
+    const user = activeUser;
 
     try {
       if (!silent) setLoading(true);
@@ -51,6 +56,7 @@ const ViewProfile = ({ onLogout }) => {
         if (data.profile_picture_url !== user.profile_picture_url || data.username !== user.username) {
           const updated = { ...user, username: data.username, profile_picture_url: data.profile_picture_url };
           localStorage.setItem('user', JSON.stringify(updated));
+          if (onUpdateUser) onUpdateUser(updated);
         }
       } else {
         setError("Não foi possível carregar os dados do perfil.");
@@ -61,7 +67,7 @@ const ViewProfile = ({ onLogout }) => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, propUser, onUpdateUser]);
 
   useEffect(() => {
     loadProfile();

@@ -12,41 +12,60 @@ import ViewProfile from './pages/ViewProfile';
 import EditProfile from './pages/EditProfile';
 
 const App = () => {
-  // 1. Tenta recuperar o usuário do "computador" (localStorage) ao abrir o site
+  // 1. Tenta recuperar o usuário do "computador" (localStorage) ao abrir o site com proteção contra JSON inválido
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('user');
+      if (!savedUser) return null;
+      const parsed = JSON.parse(savedUser);
+      return parsed && parsed.id ? parsed : null;
+    } catch (err) {
+      console.warn("Dados de sessão inválidos no localStorage, limpando:", err);
+      localStorage.removeItem('user');
+      return null;
+    }
   });
   
   const [songs, setSongs] = useState([]);
 
-  // 2. Sempre que o 'user' mudar (login ou refresh), busca as músicas no servidor
+  // 2. Sempre que o 'user' mudar (login ou refresh), garante persistência e busca as músicas no servidor
   useEffect(() => {
-    if (user) {
+    if (user && user.id) {
       // Salva o usuário no computador para persistir o login
       localStorage.setItem('user', JSON.stringify(user));
       
       // Busca as músicas reais do banco de dados
       fetch(`http://localhost:8000/songs/${user.id}`)
-        .then(res => res.json())
+        .then(res => (res.ok ? res.json() : []))
         .then(data => {
-          setSongs(data);
+          setSongs(Array.isArray(data) ? data : []);
         })
         .catch(err => console.error("Erro ao carregar biblioteca:", err));
     }
   }, [user]);
 
-  const handleLogin = (userData) => setUser(userData);
+  const handleLogin = (userData) => {
+    if (!userData || !userData.id) return;
+    // Grava sincronamente no localStorage ANTES da navegação para evitar race condition
+    // com os useEffects das páginas filhas (EditProfile / ViewProfile) no React 19
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+  };
   
   const handleLogout = () => {
+    try {
+      window.google?.accounts?.id?.disableAutoSelect?.();
+    } catch {
+      // Ignora caso o SDK do Google não esteja carregado
+    }
+    localStorage.removeItem('user');
     setUser(null);
     setSongs([]);
-    localStorage.removeItem('user');
   };
 
   const handleUpdateUser = (updatedData) => {
     setUser(prev => {
-      const merged = { ...prev, ...updatedData };
+      const merged = { ...(prev || {}), ...updatedData };
       localStorage.setItem('user', JSON.stringify(merged));
       return merged;
     });
@@ -84,7 +103,17 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login onLogin={handleLogin} />} />
+        <Route path="/" element={
+          user ? (
+            <Navigate
+              to={user.is_profile_completed === false ? "/edit-profile" : "/dashboard"}
+              state={user.is_profile_completed === false ? { isNewUser: true } : undefined}
+              replace
+            />
+          ) : (
+            <Login onLogin={handleLogin} />
+          )
+        } />
         
         <Route path="/dashboard" element={
           user ? <Dashboard email={user.username || user.email} user={user} songs={songs} onDeleteSong={handleDeleteSong} onLogout={handleLogout} /> 
