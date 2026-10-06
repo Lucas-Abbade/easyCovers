@@ -103,6 +103,7 @@ class Song(Base):
     instrument = Column(String)
     folder_path = Column(String)
     cover_image_url = Column(String, nullable=True)
+    practice_markers = Column(String, default="[]", nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     
     owner = relationship("User", back_populates="songs")

@@ -146,9 +146,25 @@ const Mixer = () => {
   const [currentPitch, setCurrentPitch] = useState(0);
   const [currentKey, setCurrentKey] = useState(() => getShiftedKey(rawKey, 0));
 
+  // --- STUDIO PRACTICE SUITE: Estados de Loop A-B, Velocidade, Metrônomo e Marcadores ---
+  const [loopA, setLoopA] = useState(null); // segundos
+  const [loopB, setLoopB] = useState(null); // segundos
+  const [isLooping, setIsLooping] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0); // 0.5x a 1.25x
+  const [isCountInEnabled, setIsCountInEnabled] = useState(false);
+  const [isCountingIn, setIsCountingIn] = useState(false);
+  const [countInNumber, setCountInNumber] = useState(null); // 4, 3, 2, 1
+  const countInTimersRef = useRef([]);
+
+  // Marcadores de Treino Nomeados (ex: Solo, Riff, Refrão)
+  const [practiceMarkers, setPracticeMarkers] = useState([]);
+  const [isSavingMarker, setIsSavingMarker] = useState(false);
+  const [newMarkerName, setNewMarkerName] = useState('');
+
   const players = useRef(null);
   const pitchShift = useRef(null);
   const progressInterval = useRef(null);
+
 
   // Busca letras no backend via LRCLIB
   useEffect(() => {
@@ -276,6 +292,7 @@ const Mixer = () => {
         if (players.current.has(track)) {
           const player = players.current.player(track);
           player.volume.value = 20 * Math.log10((80 / 100) * 0.5);
+          player.playbackRate = playbackSpeed;
           player.sync().start(0);
         }
       });
@@ -285,7 +302,9 @@ const Mixer = () => {
 
     return () => {
       cancelAnimationFrame(progressInterval.current);
+      countInTimersRef.current.forEach(t => clearTimeout(t));
       Tone.Transport.stop();
+      Tone.Transport.loop = false;
       Tone.Transport.seconds = 0;
       players.current?.dispose();
       pitchShift.current?.dispose();
@@ -298,7 +317,7 @@ const Mixer = () => {
       if (Tone.Transport.state === 'started') {
         setProgress(Tone.Transport.seconds);
 
-        if (duration > 0 && Tone.Transport.seconds >= duration) {
+        if (!isLooping && duration > 0 && Tone.Transport.seconds >= duration) {
           Tone.Transport.stop();
           Tone.Transport.seconds = 0;
           setProgress(0);
@@ -314,20 +333,80 @@ const Mixer = () => {
     }
 
     return () => cancelAnimationFrame(progressInterval.current);
-  }, [isPlaying, duration]);
+  }, [isPlaying, duration, isLooping]);
 
-  // Alternar Play / Pause
+
+  // Síntese de clique para contagem de entrada (Metrônomo Pre-Roll de 4 tempos)
+  const playClickSound = useCallback((freq = 800) => {
+    try {
+      const ctx = Tone.context?.rawContext || (Tone.getContext && Tone.getContext()?.rawContext);
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    } catch (err) {
+      console.warn("Falha no clique do metrônomo:", err);
+    }
+  }, []);
+
+  const runCountIn = useCallback((onFinished) => {
+    setIsCountingIn(true);
+    setCountInNumber(4);
+    playClickSound(800);
+
+    const t1 = setTimeout(() => {
+      setCountInNumber(3);
+      playClickSound(800);
+    }, 500);
+
+    const t2 = setTimeout(() => {
+      setCountInNumber(2);
+      playClickSound(800);
+    }, 1000);
+
+    const t3 = setTimeout(() => {
+      setCountInNumber(1);
+      playClickSound(1200); // 4º tempo mais agudo
+    }, 1500);
+
+    const t4 = setTimeout(() => {
+      setCountInNumber(null);
+      setIsCountingIn(false);
+      onFinished();
+    }, 2000);
+
+    countInTimersRef.current = [t1, t2, t3, t4];
+  }, [playClickSound]);
+
+  // Alternar Play / Pause com suporte a Count-in
   const togglePlay = async () => {
     if (Tone.context.state !== 'running') {
       await Tone.start();
     }
 
-    if (isPlaying) {
+    if (isPlaying || isCountingIn) {
+      countInTimersRef.current.forEach(t => clearTimeout(t));
+      setCountInNumber(null);
+      setIsCountingIn(false);
       Tone.Transport.pause();
+      setIsPlaying(false);
     } else {
-      Tone.Transport.start();
+      if (isCountInEnabled) {
+        runCountIn(() => {
+          Tone.Transport.start();
+          setIsPlaying(true);
+        });
+      } else {
+        Tone.Transport.start();
+        setIsPlaying(true);
+      }
     }
-    setIsPlaying(!isPlaying);
   };
 
   // Salto de tempo (+ ou - segundos)
@@ -408,20 +487,196 @@ const Mixer = () => {
     }
   };
 
-  // Transposição Harmônica em Semitons (-12 a +12)
+  // Transposição Harmônica em Semitons (-12 a +12) com compensação da velocidade de reprodução
   const changePitch = (delta) => {
     const nextPitch = currentPitch + delta;
     if (!pitchShift.current || nextPitch < -12 || nextPitch > 12) return;
-    pitchShift.current.pitch = nextPitch;
+    const harmonicCompensation = -12 * Math.log2(playbackSpeed);
+    pitchShift.current.pitch = nextPitch + harmonicCompensation;
     setCurrentPitch(nextPitch);
     setCurrentKey(getShiftedKey(originalKey, nextPitch));
   };
 
   const resetPitch = () => {
     if (!pitchShift.current) return;
-    pitchShift.current.pitch = 0;
+    const harmonicCompensation = -12 * Math.log2(playbackSpeed);
+    pitchShift.current.pitch = 0 + harmonicCompensation;
     setCurrentPitch(0);
     setCurrentKey(getShiftedKey(originalKey, 0));
+  };
+
+  // Controle de Velocidade com Preservação Harmônica de Tom
+  const handleSpeedChange = (speed) => {
+    const clamped = Math.max(0.5, Math.min(1.25, parseFloat(speed)));
+    setPlaybackSpeed(clamped);
+
+    if (players.current) {
+      STEM_KEYS.forEach(track => {
+        if (players.current.has(track)) {
+          players.current.player(track).playbackRate = clamped;
+        }
+      });
+    }
+
+    if (pitchShift.current) {
+      const harmonicCompensation = -12 * Math.log2(clamped);
+      pitchShift.current.pitch = currentPitch + harmonicCompensation;
+    }
+  };
+
+  // --- STUDIO PRACTICE SUITE: CONTROLES DE LOOP A-B ---
+  const handleSetLoopA = (time) => {
+    const target = typeof time === 'number' ? time : progress;
+    setLoopA(target);
+    if (loopB !== null && loopB > target) {
+      setIsLooping(true);
+      Tone.Transport.loopStart = target;
+      Tone.Transport.loopEnd = loopB;
+      Tone.Transport.loop = true;
+    }
+  };
+
+  const handleSetLoopB = (time) => {
+    const target = typeof time === 'number' ? time : progress;
+    setLoopB(target);
+    if (loopA !== null && target > loopA) {
+      setIsLooping(true);
+      Tone.Transport.loopStart = loopA;
+      Tone.Transport.loopEnd = target;
+      Tone.Transport.loop = true;
+    }
+  };
+
+  const toggleLooping = () => {
+    if (loopA === null || loopB === null || loopB <= loopA) {
+      const start = progress;
+      const end = Math.min(duration || 100, progress + 10);
+      setLoopA(start);
+      setLoopB(end);
+      setIsLooping(true);
+      Tone.Transport.loopStart = start;
+      Tone.Transport.loopEnd = end;
+      Tone.Transport.loop = true;
+      return;
+    }
+
+    const next = !isLooping;
+    setIsLooping(next);
+    Tone.Transport.loop = next;
+    if (next) {
+      Tone.Transport.loopStart = loopA;
+      Tone.Transport.loopEnd = loopB;
+      if (Tone.Transport.seconds < loopA || Tone.Transport.seconds > loopB) {
+        Tone.Transport.seconds = loopA;
+        setProgress(loopA);
+      }
+    }
+  };
+
+  const handleClearLoop = () => {
+    setLoopA(null);
+    setLoopB(null);
+    setIsLooping(false);
+    Tone.Transport.loop = false;
+  };
+
+  // --- STUDIO PRACTICE SUITE: MARCADORES DE TREINO PERSISTENTES ---
+  useEffect(() => {
+    if (!song?.id) return;
+    const storageKey = `easycovers_markers_${song.id}`;
+    let loaded = [];
+    try {
+      const local = localStorage.getItem(storageKey);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed)) loaded = parsed;
+      }
+    } catch (e) {
+      console.warn("Erro ao ler marcadores locais:", e);
+    }
+
+    if (loaded.length === 0 && song.practice_markers) {
+      try {
+        const parsed = typeof song.practice_markers === 'string'
+          ? JSON.parse(song.practice_markers)
+          : song.practice_markers;
+        if (Array.isArray(parsed)) loaded = parsed;
+      } catch (e) {
+        console.warn("Erro ao ler marcadores do banco:", e);
+      }
+    }
+
+    setPracticeMarkers(loaded);
+
+    // Sincroniza em background com o backend
+    fetch(`http://localhost:8000/songs/${song.id}/markers`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data?.markers && Array.isArray(data.markers) && data.markers.length > 0) {
+          setPracticeMarkers(data.markers);
+          localStorage.setItem(storageKey, JSON.stringify(data.markers));
+        }
+      })
+      .catch(() => {});
+  }, [song?.id, song?.practice_markers]);
+
+  const handleApplyMarker = useCallback((marker) => {
+    setLoopA(marker.start);
+    setLoopB(marker.end);
+    setIsLooping(true);
+    Tone.Transport.loopStart = marker.start;
+    Tone.Transport.loopEnd = marker.end;
+    Tone.Transport.loop = true;
+    Tone.Transport.seconds = marker.start;
+    setProgress(marker.start);
+  }, []);
+
+  // Engatilha marcador inicial vindo do Dashboard se aplicável
+  useEffect(() => {
+    const initial = location.state?.initialMarker;
+    if (initial && isLoaded) {
+      handleApplyMarker(initial);
+    }
+  }, [isLoaded, location.state, handleApplyMarker]);
+
+  const handleSaveMarker = () => {
+    if (loopA === null || loopB === null || loopB <= loopA) {
+      alert("Defina os pontos A e B na timeline antes de salvar o trecho de treino.");
+      return;
+    }
+    const name = newMarkerName.trim() || `Trecho ${practiceMarkers.length + 1}`;
+    const colors = ["#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#06b6d4"];
+    const randomColor = colors[practiceMarkers.length % colors.length];
+    const newMarker = {
+      id: 'pm_' + Date.now(),
+      name,
+      start: Math.min(loopA, loopB),
+      end: Math.max(loopA, loopB),
+      color: randomColor
+    };
+    const updated = [...practiceMarkers, newMarker];
+    setPracticeMarkers(updated);
+    setNewMarkerName('');
+    setIsSavingMarker(false);
+
+    localStorage.setItem(`easycovers_markers_${song.id}`, JSON.stringify(updated));
+    fetch(`http://localhost:8000/songs/${song.id}/markers`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markers: updated })
+    }).catch(err => console.warn("Erro ao salvar marcadores no backend:", err));
+  };
+
+  const handleDeleteMarker = (markerId, e) => {
+    e.stopPropagation();
+    const updated = practiceMarkers.filter(m => m.id !== markerId);
+    setPracticeMarkers(updated);
+    localStorage.setItem(`easycovers_markers_${song.id}`, JSON.stringify(updated));
+    fetch(`http://localhost:8000/songs/${song.id}/markers`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markers: updated })
+    }).catch(err => console.warn("Erro ao atualizar marcadores no backend:", err));
   };
 
   // Presets de Estúdio: "Backing Track" (muta o instrumento do usuário)
@@ -467,7 +722,7 @@ const Mixer = () => {
     applyAudioRouting(defaultMute, defaultSolo);
   };
 
-  // Atalhos de teclado profissionais (Espaço, Setas, M, R)
+  // Atalhos de teclado profissionais (Espaço, Setas, M, R, [, ], L)
   const handlersRef = useRef({});
 
   useEffect(() => {
@@ -476,6 +731,9 @@ const Mixer = () => {
       handleSeekDelta,
       toggleMasterMute,
       handleRestart,
+      handleSetLoopA,
+      handleSetLoopB,
+      toggleLooping
     };
   });
 
@@ -498,12 +756,22 @@ const Mixer = () => {
       } else if (e.code === 'KeyR') {
         e.preventDefault();
         handlersRef.current.handleRestart?.();
+      } else if (e.code === 'BracketLeft') {
+        e.preventDefault();
+        handlersRef.current.handleSetLoopA?.();
+      } else if (e.code === 'BracketRight') {
+        e.preventDefault();
+        handlersRef.current.handleSetLoopB?.();
+      } else if (e.code === 'KeyL') {
+        e.preventDefault();
+        handlersRef.current.toggleLooping?.();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
 
   const hasAnySolo = Object.values(solos).some(Boolean);
 
@@ -700,8 +968,23 @@ const Mixer = () => {
         </section>
 
         {/* 2. PLAYER CENTRAL & TIMELINE ESTILO SPOTIFY / DAW */}
-        <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border-t-4 border-[var(--color-brand-medium)] border-x border-b border-slate-200/80 dark:border-slate-800 flex flex-col items-center gap-5">
+        <section className="relative bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border-t-4 border-[var(--color-brand-medium)] border-x border-b border-slate-200/80 dark:border-slate-800 flex flex-col items-center gap-5 overflow-hidden">
           
+          {/* Overlay de Contagem de Entrada (Count-in / Metrônomo Pre-Roll) */}
+          {countInNumber !== null && (
+            <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center z-30 transition-all animate-fade-in">
+              <span className="text-xs uppercase tracking-widest text-amber-400 font-extrabold mb-1">
+                Contagem de Entrada • Prepare-se!
+              </span>
+              <span className="text-7xl font-black text-white animate-pulse">
+                {countInNumber}
+              </span>
+              <span className="text-xs text-slate-300 font-medium mt-2">
+                Posicione as mãos no instrumento...
+              </span>
+            </div>
+          )}
+
           {/* Controles de Transporte (Rewind 5s, Play/Pause, Forward 5s, Restart) */}
           <div className="flex items-center gap-4 md:gap-6">
             <button
@@ -760,13 +1043,48 @@ const Mixer = () => {
             </div>
           </div>
 
-          {/* Barra da Linha do Tempo Estilo Spotify com Gradiente Suave */}
+          {/* Barra da Linha do Tempo Estilo Spotify com Gradiente Suave & Marcadores A-B */}
           <div className="w-full flex items-center gap-4">
             <span className="text-xs md:text-sm font-bold text-gray-600 dark:text-slate-300 w-12 text-right tabular-nums">
               {formatTime(progress)}
             </span>
 
-            <div className="relative flex-1 flex items-center group">
+            <div className="relative flex-1 flex items-center group py-3">
+              {/* Região Destacada do Loop A-B */}
+              {loopA !== null && loopB !== null && duration > 0 && (
+                <div
+                  className={`absolute top-2.5 bottom-2.5 pointer-events-none rounded transition-all ${
+                    isLooping
+                      ? 'bg-amber-400/35 border-x-2 border-amber-500 shadow-sm'
+                      : 'bg-slate-400/20 border-x border-slate-400/40'
+                  }`}
+                  style={{
+                    left: `${Math.max(0, Math.min(100, (Math.min(loopA, loopB) / duration) * 100))}%`,
+                    width: `${Math.max(0, Math.min(100, (Math.abs(loopB - loopA) / duration) * 100))}%`
+                  }}
+                />
+              )}
+
+              {/* Pin Visual Ponto A */}
+              {loopA !== null && duration > 0 && (
+                <div
+                  className="absolute -top-1 -translate-x-1/2 pointer-events-none flex flex-col items-center z-10"
+                  style={{ left: `${Math.max(0, Math.min(100, (loopA / duration) * 100))}%` }}
+                >
+                  <span className="px-1.5 py-0.5 text-[9px] font-black rounded bg-amber-500 text-white shadow-xs">A</span>
+                </div>
+              )}
+
+              {/* Pin Visual Ponto B */}
+              {loopB !== null && duration > 0 && (
+                <div
+                  className="absolute -top-1 -translate-x-1/2 pointer-events-none flex flex-col items-center z-10"
+                  style={{ left: `${Math.max(0, Math.min(100, (loopB / duration) * 100))}%` }}
+                >
+                  <span className="px-1.5 py-0.5 text-[9px] font-black rounded bg-amber-600 text-white shadow-xs">B</span>
+                </div>
+              )}
+
               <input
                 type="range"
                 min="0"
@@ -793,6 +1111,269 @@ const Mixer = () => {
             </div>
           </div>
         </section>
+
+        {/* ========================================================================= */}
+        {/* 2.5 SUÍTE DE PRÁTICA & ENSAIO MUSICAL (LOOP A-B, VELOCIDADE & METRÔNOMO) */}
+        {/* ========================================================================= */}
+        <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 md:p-6 shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg font-black shadow-xs">
+                🎸
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                    Studio Practice Suite • Modo de Ensaio
+                  </h3>
+                  {isLooping && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                      Loop Ativo
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  Repita trechos com Loop A-B, reduza a velocidade sem desafinar e prepare-se com contagem de entrada.
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle de Contagem de Entrada */}
+            <button
+              type="button"
+              onClick={() => setIsCountInEnabled(prev => !prev)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition active:scale-95 border cursor-pointer ${
+                isCountInEnabled
+                  ? 'bg-amber-500 text-white border-amber-400 shadow-amber-500/20 shadow-xs'
+                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80'
+              }`}
+              title="Executa 4 cliques com tom de entrada antes do playback ou de recomeçar"
+            >
+              <span className="text-sm">⏱️</span>
+              <span>Count-in (4 Tempos): <strong>{isCountInEnabled ? "Ligado" : "Desligado"}</strong></span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+            {/* Bloco 1: Controles de Loop A-B */}
+            <div className="lg:col-span-7 flex flex-col justify-between bg-slate-50/80 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Repetição de Trecho (Loop A-B)
+                </span>
+                
+                {/* Status dos Pontos A e B */}
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className={`px-2 py-0.5 rounded-md ${loopA !== null ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800' : 'text-slate-400'}`}>
+                    A: {loopA !== null ? formatTime(loopA) : '--:--'}
+                  </span>
+                  <span className="text-slate-300 dark:text-slate-600">→</span>
+                  <span className={`px-2 py-0.5 rounded-md ${loopB !== null ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800' : 'text-slate-400'}`}>
+                    B: {loopB !== null ? formatTime(loopB) : '--:--'}
+                  </span>
+                  {loopA !== null && loopB !== null && loopB > loopA && (
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      ({Math.round(loopB - loopA)}s)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Botões de Ação do Loop A-B */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSetLoopA()}
+                  disabled={!isLoaded}
+                  className="flex-1 min-w-[110px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-600 shadow-xs transition active:scale-95 cursor-pointer"
+                  title="Marcar início do loop na posição atual (Atalho: [ )"
+                >
+                  <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-black">A</span>
+                  <span>Marcar A <kbd className="text-[10px] opacity-60 ml-0.5 font-mono">[</kbd></span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSetLoopB()}
+                  disabled={!isLoaded}
+                  className="flex-1 min-w-[110px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-600 shadow-xs transition active:scale-95 cursor-pointer"
+                  title="Marcar fim do loop na posição atual (Atalho: ] )"
+                >
+                  <span className="w-4 h-4 rounded-full bg-amber-600 text-white text-[10px] flex items-center justify-center font-black">B</span>
+                  <span>Marcar B <kbd className="text-[10px] opacity-60 ml-0.5 font-mono">]</kbd></span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleLooping}
+                  disabled={!isLoaded}
+                  className={`flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl transition active:scale-95 shadow-xs cursor-pointer ${
+                    isLooping
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                  }`}
+                  title="Ligar ou desligar repetição contínua (Atalho: L)"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0014.053-4.015.75.75 0 00-.524-.938z" clipRule="evenodd" />
+                  </svg>
+                  <span>{isLooping ? "Loop Ativo" : "Ativar Loop"} <kbd className="text-[10px] opacity-60 ml-0.5 font-mono">L</kbd></span>
+                </button>
+
+                {(loopA !== null || loopB !== null) && (
+                  <button
+                    type="button"
+                    onClick={handleClearLoop}
+                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer"
+                    title="Limpar marcadores A e B"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Botão para Salvar Trecho Atual como Bookmark */}
+              <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
+                {!isSavingMarker ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (loopA === null || loopB === null || loopB <= loopA) {
+                        alert("Defina primeiro os pontos A e B para poder salvar o trecho de treino.");
+                        return;
+                      }
+                      setIsSavingMarker(true);
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                  >
+                    <span>⭐ Salvar este trecho como marcador permanente</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="text"
+                      placeholder="Nome do trecho (ex: Solo, Riff da Intro)"
+                      value={newMarkerName}
+                      onChange={(e) => setNewMarkerName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveMarker();
+                        if (e.key === 'Escape') setIsSavingMarker(false);
+                      }}
+                      autoFocus
+                      className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-600 rounded-lg text-xs text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveMarker}
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsSavingMarker(false)}
+                      className="px-2 py-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bloco 2: Controle de Velocidade / Slow Down */}
+            <div className="lg:col-span-5 flex flex-col justify-between bg-slate-50/80 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Velocidade (Slow Down)
+                </span>
+                <span className="px-2 py-0.5 rounded-md text-xs font-black bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  {Math.round(playbackSpeed * 100)}% ({playbackSpeed}x)
+                </span>
+              </div>
+
+              {/* Presets Rápidos de Velocidade */}
+              <div className="flex items-center gap-1.5">
+                {[0.5, 0.75, 0.9, 1.0, 1.1].map(speed => (
+                  <button
+                    key={speed}
+                    type="button"
+                    onClick={() => handleSpeedChange(speed)}
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition active:scale-95 border cursor-pointer ${
+                      playbackSpeed === speed
+                        ? 'bg-[var(--color-brand-medium)] text-white border-[var(--color-brand-medium)] shadow-xs'
+                        : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
+                    }`}
+                  >
+                    {speed === 1.0 ? "1x (Normal)" : `${speed}x`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Slider de Ajuste Fino */}
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-slate-400">50%</span>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="1.25"
+                  step="0.05"
+                  value={playbackSpeed}
+                  onChange={(e) => handleSpeedChange(e.target.value)}
+                  className="flex-1 h-2 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <span className="text-[10px] font-bold text-slate-400">125%</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Afinação da música protegida (Tom mantido em {currentKey})</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de Marcadores de Treino Salvos (Bookmarks) */}
+          {practiceMarkers.length > 0 && (
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-2">
+                Trechos Salvos desta Música ({practiceMarkers.length}):
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {practiceMarkers.map(marker => {
+                  const isCurrentActive = loopA === marker.start && loopB === marker.end && isLooping;
+                  return (
+                    <div
+                      key={marker.id}
+                      onClick={() => handleApplyMarker(marker)}
+                      className={`group flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs ${
+                        isCurrentActive
+                          ? 'bg-amber-500 text-white border-amber-400 shadow-amber-500/20'
+                          : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-600'
+                      }`}
+                      title={`Tocar em loop: ${formatTime(marker.start)} até ${formatTime(marker.end)}`}
+                    >
+                      <span className="text-amber-500 group-hover:scale-110 transition-transform">🎸</span>
+                      <span>{marker.name}</span>
+                      <span className={`text-[10px] font-normal ${isCurrentActive ? 'text-amber-100' : 'text-slate-400'}`}>
+                        [{formatTime(marker.start)} - {formatTime(marker.end)}]
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteMarker(marker.id, e)}
+                        className="p-0.5 rounded hover:bg-black/10 transition text-xs opacity-60 hover:opacity-100 ml-1"
+                        title="Remover este marcador"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+
 
         {/* 3. BARRA MASTER & PRESETS DE ENSAIO */}
         <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-white/80 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-5">

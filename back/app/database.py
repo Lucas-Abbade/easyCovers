@@ -108,3 +108,11 @@ def run_migrations():
                     print("[Migration] Coluna 'cover_image_url' adicionada com sucesso à tabela songs.")
                 except Exception as e:
                     print(f"[Migration] Aviso ao adicionar coluna 'cover_image_url': {e}")
+            if "practice_markers" not in existing_songs_cols:
+                try:
+                    conn.execute(text("ALTER TABLE songs ADD COLUMN practice_markers TEXT DEFAULT '[]'"))
+                    conn.commit()
+                    print("[Migration] Coluna 'practice_markers' adicionada com sucesso à tabela songs.")
+                except Exception as e:
+                    print(f"[Migration] Aviso ao adicionar coluna 'practice_markers': {e}")
+

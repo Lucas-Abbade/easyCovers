@@ -29,6 +29,16 @@ class VerificationStatusResponse(BaseModel):
     email: Optional[str] = None
     resend_cooldown: Optional[int] = None
 
+class PracticeMarker(BaseModel):
+    id: str
+    name: str
+    start: float
+    end: float
+    color: Optional[str] = None
+
+class UpdateMarkersRequest(BaseModel):
+    markers: List[PracticeMarker]
+
 class SongSummary(BaseModel):
     id: int
     name: str
@@ -36,6 +46,8 @@ class SongSummary(BaseModel):
     genre: Optional[str] = None
     instrument: Optional[str] = None
     cover_image_url: Optional[str] = None
+    practice_markers: Optional[str] = "[]"
+
 
 class SpotifyConnectionStatus(BaseModel):
     connected: bool = False

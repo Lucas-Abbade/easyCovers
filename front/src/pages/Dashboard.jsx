@@ -4,6 +4,35 @@ import { GuitarIcon } from '../components/Icons';
 import { getGenreImage, AVAILABLE_GENRES } from '../utils/genreImages';
 import ThemeToggle from '../components/ThemeToggle';
 
+// Formatação de tempo mm:ss para marcadores de treino
+const formatMarkerTime = (secs) => {
+  if (!secs || isNaN(secs)) return "0:00";
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+};
+
+// Recupera marcadores de treino (híbrido: localStorage para atualização imediata ou banco)
+const getSongPracticeMarkers = (song) => {
+  if (!song?.id) return [];
+  try {
+    const local = localStorage.getItem(`easycovers_markers_${song.id}`);
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+    if (song.practice_markers) {
+      const parsed = typeof song.practice_markers === 'string'
+        ? JSON.parse(song.practice_markers)
+        : song.practice_markers;
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    // ignora erro de parse
+  }
+  return [];
+};
+
 const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
   const navigate = useNavigate();
 
@@ -16,6 +45,7 @@ const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
 
   // Lista de gêneros predefinidos sincronizada com o catálogo
   const generosDisponiveis = AVAILABLE_GENRES;
+
 
   // Processamento reativo com useMemo para filtragem e ordenação de alta performance
   const processedSongs = useMemo(() => {
@@ -521,6 +551,39 @@ const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
                       <span className="truncate text-slate-700 dark:text-slate-300 font-bold">{song.artist || "Artista Desconhecido"}</span>
                     </div>
 
+                    {/* Trechos de Estudo Salvos (Studio Practice Suite) */}
+                    {(() => {
+                      const markers = getSongPracticeMarkers(song);
+                      if (markers.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1">
+                            <span>🎸</span> Treinos:
+                          </span>
+                          {markers.slice(0, 3).map(m => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate('/mixer', { state: { song, initialMarker: m } });
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 transition active:scale-95 cursor-pointer shadow-2xs"
+                              title={`Abrir Mixer direto no trecho: ${m.name} (${formatMarkerTime(m.start)} - ${formatMarkerTime(m.end)})`}
+                            >
+                              <span>{m.name}</span>
+                              <span className="text-[10px] opacity-70">[{formatMarkerTime(m.start)}]</span>
+                            </button>
+                          ))}
+                          {markers.length > 3 && (
+                            <span className="text-[10px] font-bold text-slate-400">
+                              +{markers.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {/* Chips rápidos mobile */}
                     <div className="flex flex-wrap items-center gap-1.5 mt-2 md:hidden">
                       <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
@@ -656,6 +719,39 @@ const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
                         </span>
                       </div>
                     )}
+
+                    {/* Trechos de Estudo Salvos (Grid View) */}
+                    {(() => {
+                      const markers = getSongPracticeMarkers(song);
+                      if (markers.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1">
+                            <span>🎸</span> Treinos:
+                          </span>
+                          {markers.slice(0, 2).map(m => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate('/mixer', { state: { song, initialMarker: m } });
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 transition active:scale-95 cursor-pointer shadow-2xs"
+                              title={`Abrir Mixer no trecho: ${m.name} (${formatMarkerTime(m.start)} - ${formatMarkerTime(m.end)})`}
+                            >
+                              <span className="truncate max-w-[85px]">{m.name}</span>
+                              <span className="text-[9px] opacity-70">[{formatMarkerTime(m.start)}]</span>
+                            </button>
+                          ))}
+                          {markers.length > 2 && (
+                            <span className="text-[10px] font-bold text-slate-400">
+                              +{markers.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Rodapé do Card: Ações */}
