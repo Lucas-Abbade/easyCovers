@@ -11,3 +11,4 @@ setuptools
 wheel
 yt-dlp
 google-auth
+python-dotenv

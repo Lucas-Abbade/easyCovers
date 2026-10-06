@@ -7,6 +7,11 @@ easycovers.db
 storage/
 temp_uploads/
 
+# Variáveis de ambiente e credenciais
+.env
+*.env
+!.env.example
+
 # Arquivos do sistema (Windows/Mac)
 .DS_Store
 Thumbs.db

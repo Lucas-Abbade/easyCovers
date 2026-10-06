@@ -57,6 +57,7 @@ class User(Base):
     social_spotify = Column(String, nullable=True)
     social_x = Column(String, nullable=True)
     is_profile_completed = Column(Boolean, default=False, nullable=False)
+    is_email_verified = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=True)
 
     # Integração OAuth 2.0 Spotify
@@ -73,6 +74,23 @@ class User(Base):
     spotify_liked_tracks_json = Column(String, nullable=True)
 
     songs = relationship("Song", back_populates="owner")
+
+
+class EmailVerification(Base):
+    __tablename__ = "email_verifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, index=True, nullable=False)
+    code_hash = Column(String, nullable=False)
+    salt = Column(String, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False)
+    max_attempts = Column(Integer, default=5, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    is_used = Column(Boolean, default=False, nullable=False)
+    purpose = Column(String, default="register", nullable=False)
+    pending_password_hash = Column(String, nullable=True)
+    pending_username = Column(String, nullable=True)
     
 class Song(Base):
     __tablename__ = "songs"

@@ -28,10 +28,39 @@ const Login = ({ onLogin }) => {
   const [googleSdkError, setGoogleSdkError] = useState(false);
   const [originWarning, setOriginWarning] = useState('');
 
+  // Estados para Verificação de E-mail (OTP 6 dígitos)
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [resendCooldown, setResendCooldown] = useState(60);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const otpRefs = useRef([]);
+
   const navigate = useNavigate();
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '306538057431-96v86vvcrqvi556j85o2gad7mr5irf45.apps.googleusercontent.com';
   const googleInitialized = useRef(false);
   const googleCallbackRef = useRef(null);
+
+  // Efeito para contagem regressiva do reenvio de código (60s cooldown)
+  useEffect(() => {
+    if (!showVerification || resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showVerification, resendCooldown]);
+
+  // Foco automático no primeiro input ao abrir a tela de verificação
+  useEffect(() => {
+    if (showVerification) {
+      const timer = setTimeout(() => {
+        otpRefs.current[0]?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [showVerification]);
 
   // Extrai mensagem de erro legível (evita crash do React caso o FastAPI retorne array 422 em data.detail)
   const extractErrorDetail = (data, fallbackMsg) => {
@@ -262,25 +291,52 @@ const Login = ({ onLogin }) => {
 
       const data = await response.json().catch(() => null);
 
-      if (response.ok && data && data.id) {
-        const userData = {
-          id: data.id,
-          email: data.email,
-          username: data.username,
-          full_name: data.full_name || '',
-          profile_picture_url: data.profile_picture_url || '',
-          is_profile_completed: Boolean(data.is_profile_completed)
-        };
-        onLogin(userData);
-        setUsername(''); 
-        setPassword(''); 
-        setConfirmPassword('');
-        if (!userData.is_profile_completed) {
-          navigate('/edit-profile', { state: { isNewUser: true } });
+      if (response.ok) {
+        // Fluxo de Cadastro: e-mail pendente de confirmação
+        if (isRegistering && data && data.status === "pending_verification") {
+          setVerificationEmail(normalizedEmail);
+          setShowVerification(true);
+          setResendCooldown(data.resend_cooldown || 60);
+          setOtpDigits(['', '', '', '', '', '']);
+          setSuccessMessage("Código enviado! Verifique sua caixa de entrada (ou o terminal em modo de teste).");
+          setErrorMessage('');
+          return;
+        }
+
+        // Fluxo de Sucesso imediato (ou Login padrão)
+        if (data && data.id) {
+          const userData = {
+            id: data.id,
+            email: data.email,
+            username: data.username,
+            full_name: data.full_name || '',
+            profile_picture_url: data.profile_picture_url || '',
+            is_profile_completed: Boolean(data.is_profile_completed),
+            is_email_verified: Boolean(data.is_email_verified)
+          };
+          onLogin(userData);
+          setUsername(''); 
+          setPassword(''); 
+          setConfirmPassword('');
+          if (!userData.is_profile_completed) {
+            navigate('/edit-profile', { state: { isNewUser: true } });
+          } else {
+            navigate('/dashboard');
+          }
         } else {
-          navigate('/dashboard');
+          setErrorMessage(extractErrorDetail(data, "Não foi possível realizar a autenticação."));
         }
       } else {
+        // Usuário tentou login mas o e-mail ainda não foi verificado (HTTP 403)
+        if (response.status === 403 && data?.detail && typeof data.detail === 'string' && data.detail.toLowerCase().includes("não foi verificado")) {
+          setVerificationEmail(normalizedEmail);
+          setShowVerification(true);
+          setResendCooldown(60);
+          setOtpDigits(['', '', '', '', '', '']);
+          setErrorMessage("Seu e-mail ainda não foi verificado. Enviamos um código para validação.");
+          return;
+        }
+
         setErrorMessage(extractErrorDetail(data, "Não foi possível realizar a autenticação."));
       }
     } catch (error) {
@@ -288,6 +344,133 @@ const Login = ({ onLogin }) => {
       setErrorMessage("Erro ao conectar com o servidor (porta 8000). Verifique se o backend está rodando e tente novamente.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Funções de manipulação do código OTP (6 dígitos)
+  const handleOtpChange = (value, index) => {
+    const cleanDigit = value.replace(/\D/g, '').slice(-1);
+    const updated = [...otpDigits];
+    updated[index] = cleanDigit;
+    setOtpDigits(updated);
+    setErrorMessage('');
+
+    if (cleanDigit && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === 'Backspace') {
+      if (!otpDigits[index] && index > 0) {
+        otpRefs.current[index - 1]?.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+
+    const updated = [...otpDigits];
+    for (let i = 0; i < pasted.length && i < 6; i++) {
+      updated[i] = pasted[i];
+    }
+    setOtpDigits(updated);
+    setErrorMessage('');
+
+    const nextIndex = Math.min(pasted.length, 5);
+    otpRefs.current[nextIndex]?.focus();
+  };
+
+  const handleVerifyCode = async (e) => {
+    if (e) e.preventDefault();
+    const code = otpDigits.join('').trim();
+    if (code.length < 6) {
+      setErrorMessage("Por favor, preencha todos os 6 dígitos do código de verificação.");
+      return;
+    }
+
+    setIsVerifying(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const response = await fetch('http://localhost:8000/verify-email/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verificationEmail, code })
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data && data.id) {
+        const userData = {
+          id: data.id,
+          email: data.email,
+          username: data.username,
+          full_name: data.full_name || '',
+          profile_picture_url: data.profile_picture_url || '',
+          is_profile_completed: Boolean(data.is_profile_completed),
+          is_email_verified: true
+        };
+        onLogin(userData);
+        setUsername('');
+        setPassword('');
+        setConfirmPassword('');
+        setOtpDigits(['', '', '', '', '', '']);
+        setShowVerification(false);
+
+        if (!userData.is_profile_completed) {
+          navigate('/edit-profile', { state: { isNewUser: true } });
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        setErrorMessage(extractErrorDetail(data, "Código inválido ou expirado. Tente novamente."));
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMessage("Erro ao conectar com o servidor. Verifique se o backend está em execução.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || isResending) return;
+
+    setIsResending(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const response = await fetch('http://localhost:8000/resend-verification/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verificationEmail })
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (response.ok) {
+        setSuccessMessage("Novo código enviado com sucesso! Verifique sua caixa de entrada.");
+        setResendCooldown(data?.resend_cooldown || 60);
+        setOtpDigits(['', '', '', '', '', '']);
+        setTimeout(() => otpRefs.current[0]?.focus(), 50);
+      } else {
+        setErrorMessage(extractErrorDetail(data, "Não foi possível reenviar o código. Aguarde alguns instantes."));
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMessage("Erro ao conectar com o servidor para reenviar código.");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -495,41 +678,189 @@ const Login = ({ onLogin }) => {
           /* ETAPA 2: FORMULÁRIO DE LOGIN E CADASTRO                                   */
           /* ========================================================================= */
           <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/80 dark:border-slate-800 transition-all duration-300 animate-fade-in-scale max-w-md mx-auto">
-            {/* Navegação de Retorno para Apresentação */}
-            <div className="flex items-center justify-between mb-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAuthForm(false);
-                  setErrorMessage('');
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 transition-colors py-1 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-                </svg>
-                <span>Voltar para apresentação</span>
-              </button>
+            {showVerification ? (
+              /* ========================================================================= */
+              /* ETAPA 2.1: TELA DE VERIFICAÇÃO DE E-MAIL (OTP 6 DÍGITOS)                  */
+              /* ========================================================================= */
+              <div>
+                {/* Navegação de Retorno */}
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowVerification(false);
+                      setErrorMessage('');
+                      setSuccessMessage('');
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 transition-colors py-1 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                    </svg>
+                    <span>Voltar / Corrigir dados</span>
+                  </button>
 
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">EasyCovers Auth</span>
-            </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Etapa 2 de 2
+                  </span>
+                </div>
 
-            {/* Cabeçalho do Card */}
-            <div className="text-center mb-5">
-              <img 
-                src="/assets/logo_symbol.png" 
-                alt="EasyCovers Logo" 
-                className="mx-auto w-14 h-14 object-contain drop-shadow-sm mb-2"
-              />
-              <h2 className="text-2xl font-black text-[var(--color-brand-deep)] dark:text-slate-100 tracking-tight">
-                {isRegistering ? "Crie sua conta gratuita" : "Bem-vindo de volta"}
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 font-medium">
-                {isRegistering 
-                  ? "Junte-se à comunidade de músicos e comece a mixar suas faixas" 
-                  : "Acesse seu estúdio e continue de onde parou"}
-              </p>
-            </div>
+                {/* Cabeçalho */}
+                <div className="text-center mb-5">
+                  <div className="w-14 h-14 mx-auto mb-2 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200/70 dark:border-blue-800/60 flex items-center justify-center text-[var(--color-brand-medium)] dark:text-blue-400 shadow-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor" className="w-7 h-7">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-black text-[var(--color-brand-deep)] dark:text-slate-100 tracking-tight">
+                    Verifique seu e-mail
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-1.5 font-medium leading-relaxed">
+                    Enviamos um código de segurança de 6 dígitos para:
+                  </p>
+                  <div className="mt-1 font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800/80 px-3 py-1 rounded-lg inline-block border border-slate-200/80 dark:border-slate-700 break-all">
+                    {verificationEmail}
+                  </div>
+                </div>
+
+                {/* Mensagem de Sucesso (ex: reenvio) */}
+                {successMessage && (
+                  <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-medium flex items-start gap-2 animate-fade-in-scale">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                    </svg>
+                    <span className="flex-1 leading-relaxed">{successMessage}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSuccessMessage('')}
+                      className="text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-200"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                {/* Alerta de Erro */}
+                {errorMessage && (
+                  <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 rounded-xl text-xs font-medium flex items-start gap-2 animate-fade-in-scale">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-red-500 shrink-0 mt-0.5">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                    <span className="flex-1 leading-relaxed">{errorMessage}</span>
+                    <button
+                      type="button"
+                      onClick={() => setErrorMessage('')}
+                      className="text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                {/* Form com Inputs Segmentados (6 dígitos) */}
+                <form onSubmit={handleVerifyCode} className="flex flex-col gap-3">
+                  <div className="flex justify-center gap-2 sm:gap-2.5 my-3">
+                    {otpDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => (otpRefs.current[idx] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(e.target.value, idx)}
+                        onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+                        onPaste={handleOtpPaste}
+                        className="w-10 h-13 sm:w-12 sm:h-14 text-center font-mono text-xl sm:text-2xl font-black rounded-xl bg-slate-50/90 dark:bg-slate-800/90 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-850 focus:border-[var(--color-brand-medium)] dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 outline-none transition-all shadow-xs"
+                      />
+                    ))}
+                  </div>
+
+                  {/* Linha de Reenvio com Cronômetro */}
+                  <div className="flex items-center justify-between text-xs my-1 px-1">
+                    <span className="text-slate-500 dark:text-slate-400">Não recebeu o código?</span>
+                    <button
+                      type="button"
+                      disabled={resendCooldown > 0 || isResending}
+                      onClick={handleResendCode}
+                      className={`font-black transition-colors ${
+                        resendCooldown > 0 || isResending
+                          ? 'text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                          : 'text-[var(--color-brand-medium)] dark:text-blue-400 hover:text-[var(--color-brand-dark)] dark:hover:text-blue-300 hover:underline cursor-pointer'
+                      }`}
+                    >
+                      {isResending ? (
+                        'Enviando...'
+                      ) : resendCooldown > 0 ? (
+                        `Reenviar em 00:${resendCooldown < 10 ? '0' : ''}${resendCooldown}`
+                      ) : (
+                        'Reenviar código'
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Botão de Confirmação */}
+                  <button
+                    type="submit"
+                    disabled={isVerifying || otpDigits.join('').length < 6}
+                    className="w-full mt-2 bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] text-white py-3 px-4 rounded-xl text-sm font-black transition-all shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        <span>Confirmando...</span>
+                      </>
+                    ) : (
+                      <span>Confirmar e Entrar</span>
+                    )}
+                  </button>
+                </form>
+
+                <p className="mt-4 text-center text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                  Não encontrou na caixa de entrada? Verifique também a pasta de <strong>spam</strong> ou <strong>lixo eletrônico</strong>.
+                </p>
+              </div>
+            ) : (
+              /* ========================================================================= */
+              /* ETAPA 2.2: FORMULÁRIO DE LOGIN E CADASTRO PADRÃO                          */
+              /* ========================================================================= */
+              <>
+                {/* Navegação de Retorno para Apresentação */}
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAuthForm(false);
+                      setErrorMessage('');
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 transition-colors py-1 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                    </svg>
+                    <span>Voltar para apresentação</span>
+                  </button>
+
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">EasyCovers Auth</span>
+                </div>
+
+                {/* Cabeçalho do Card */}
+                <div className="text-center mb-5">
+                  <img 
+                    src="/assets/logo_symbol.png" 
+                    alt="EasyCovers Logo" 
+                    className="mx-auto w-14 h-14 object-contain drop-shadow-sm mb-2"
+                  />
+                  <h2 className="text-2xl font-black text-[var(--color-brand-deep)] dark:text-slate-100 tracking-tight">
+                    {isRegistering ? "Crie sua conta gratuita" : "Bem-vindo de volta"}
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 font-medium">
+                    {isRegistering 
+                      ? "Junte-se à comunidade de músicos e comece a mixar suas faixas" 
+                      : "Acesse seu estúdio e continue de onde parou"}
+                  </p>
+                </div>
 
             {/* Seletor de Modo (Abas de Login / Cadastro) */}
             <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center mb-5">
@@ -808,10 +1139,12 @@ const Login = ({ onLogin }) => {
             <footer className="mt-3 text-center text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
               Ao continuar, você concorda com nossos Termos de Uso e Política de Privacidade.
             </footer>
-          </div>
+          </>
         )}
       </div>
-    </div>
+    )}
+  </div>
+</div>
   );
 };
 

@@ -14,6 +14,20 @@ class AuthResponse(BaseModel):
     username: Optional[str] = None
     profile_picture_url: Optional[str] = None
     is_profile_completed: bool = False
+    is_email_verified: bool = False
+
+class VerifyEmailRequest(BaseModel):
+    email: str
+    code: str
+
+class ResendVerificationRequest(BaseModel):
+    email: str
+
+class VerificationStatusResponse(BaseModel):
+    status: str
+    message: str
+    email: Optional[str] = None
+    resend_cooldown: Optional[int] = None
 
 class SongSummary(BaseModel):
     id: int
@@ -50,6 +64,7 @@ class UserProfileResponse(BaseModel):
     social_spotify: Optional[str] = ""
     social_x: Optional[str] = ""
     is_profile_completed: bool = False
+    is_email_verified: bool = False
     created_at: Optional[datetime] = None
     songs_count: int = 0
     recent_songs: List[SongSummary] = []

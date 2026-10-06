@@ -33,6 +33,7 @@ def run_migrations():
 
         new_columns = [
             ("is_profile_completed", "BOOLEAN DEFAULT 0"),
+            ("is_email_verified", "BOOLEAN DEFAULT 0"),
             ("banner_picture_url", "VARCHAR"),
             ("location", "VARCHAR"),
             ("experience_level", "VARCHAR"),
@@ -54,14 +55,46 @@ def run_migrations():
             ("spotify_liked_tracks_json", "TEXT"),
         ]
 
+        added_email_verified = False
         for col_name, col_type in new_columns:
             if col_name not in existing_cols:
                 try:
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
                     conn.commit()
                     print(f"[Migration] Coluna '{col_name}' adicionada com sucesso à tabela users.")
+                    if col_name == "is_email_verified":
+                        added_email_verified = True
                 except Exception as e:
                     print(f"[Migration] Aviso ao adicionar coluna '{col_name}': {e}")
+
+        # Se a coluna de verificação foi recém-adicionada, migra contas pré-existentes como já verificadas
+        if added_email_verified:
+            try:
+                conn.execute(text("UPDATE users SET is_email_verified = 1 WHERE is_email_verified IS NULL OR is_email_verified = 0"))
+                conn.commit()
+                print("[Migration] Usuários existentes marcados como verificados com sucesso.")
+            except Exception as e:
+                print(f"[Migration] Aviso ao atualizar is_email_verified para usuários existentes: {e}")
+
+        # Migração da tabela email_verifications
+        result_ev = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='email_verifications'"))
+        if result_ev.fetchone():
+            ev_cols_info = conn.execute(text("PRAGMA table_info(email_verifications)")).fetchall()
+            existing_ev_cols = {col[1] for col in ev_cols_info}
+            if "pending_password_hash" not in existing_ev_cols:
+                try:
+                    conn.execute(text("ALTER TABLE email_verifications ADD COLUMN pending_password_hash VARCHAR"))
+                    conn.commit()
+                    print("[Migration] Coluna 'pending_password_hash' adicionada à tabela email_verifications.")
+                except Exception as e:
+                    print(f"[Migration] Aviso ao adicionar coluna 'pending_password_hash': {e}")
+            if "pending_username" not in existing_ev_cols:
+                try:
+                    conn.execute(text("ALTER TABLE email_verifications ADD COLUMN pending_username VARCHAR"))
+                    conn.commit()
+                    print("[Migration] Coluna 'pending_username' adicionada à tabela email_verifications.")
+                except Exception as e:
+                    print(f"[Migration] Aviso ao adicionar coluna 'pending_username': {e}")
 
         # Migração da tabela songs
         result_songs = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='songs'"))
