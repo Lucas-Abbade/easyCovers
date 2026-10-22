@@ -368,3 +368,165 @@ export const AlertCircleIcon = ({ className = "w-4 h-4" }) => (
   </svg>
 );
 
+
+// --- 3. ÍCONES AVANÇADOS DE ESTÚDIO E LANDING PAGE ---
+
+// Forma de Onda Acústica (Waveform)
+export const WaveformIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M2 13v-2" />
+    <path d="M6 17V7" />
+    <path d="M10 21V3" />
+    <path d="M14 16V8" />
+    <path d="M18 19V5" />
+    <path d="M22 13v-2" />
+  </svg>
+);
+
+// Loop A-B de Prática Musical
+export const LoopRepeatIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="m17 2 4 4-4 4" />
+    <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+    <path d="m7 22-4-4 4-4" />
+    <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+  </svg>
+);
+
+// Metrônomo / Count-In de Estúdio
+export const MetronomeIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="m6 21 4.5-18h3L18 21Z" />
+    <path d="M4 21h16" />
+    <path d="m12 15 6-8" />
+    <circle cx="12" cy="15" r="1.5" />
+  </svg>
+);
+
+// Microfone / Letras Sincronizadas (Karaokê .LRC)
+export const MicLyricsIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+  </svg>
+);
+
+// Triângulo de Play com Alinhamento Óptico (make-interfaces-feel-better)
+export const PlayOpticalIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M7.5 5.25a1.25 1.25 0 0 1 1.91-.98l10.25 6.75a1.25 1.25 0 0 1 0 1.96l-10.25 6.75a1.25 1.25 0 0 1-1.91-.98V5.25Z" />
+  </svg>
+);
+
+// Ícone de Pause Sólido
+export const PauseOpticalIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <rect x="6" y="4" width="4.5" height="16" rx="1.5" />
+    <rect x="13.5" y="4" width="4.5" height="16" rx="1.5" />
+  </svg>
+);
+
+// Headphones de Monitoramento
+export const HeadphonesStudioIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+  </svg>
+);
+
+// Motor Neural / Processamento IA
+export const BoltAiIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+  </svg>
+);
+
+// Busca de Catálogo
+export const SearchCatalogIcon = ({ className = "w-4 h-4" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.3-4.3" />
+  </svg>
+);

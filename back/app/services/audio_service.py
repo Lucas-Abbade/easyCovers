@@ -1,17 +1,40 @@
 import os
-import torch
-import torchaudio
-import soundfile as sf
 import subprocess
-from demucs.apply import apply_model
-from demucs.pretrained import get_model
+import soundfile as sf
+from typing import Tuple, Any
 
-print("--- Inicializando IA (Demucs) ---")
-modelo_nome = "htdemucs_6s"
-model = get_model(modelo_nome)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model.to(device)
-print(f"Modelo IA pronto no dispositivo: {device}")
+_model = None
+_device = None
+
+def get_demucs_model():
+    """
+    Carrega o modelo Demucs sob demanda (Lazy Loading).
+    Evita travar a inicialização da API inteira caso haja problemas no PyTorch ou na política do sistema.
+    """
+    global _model, _device
+    if _model is None:
+        print("--- Inicializando IA (Demucs) sob demanda ---")
+        try:
+            import torch
+            from demucs.pretrained import get_model
+            
+            modelo_nome = "htdemucs_6s"
+            _model = get_model(modelo_nome)
+            _device = "cuda" if torch.cuda.is_available() else "cpu"
+            _model.to(_device)
+            print(f"Modelo IA pronto no dispositivo: {_device}")
+        except OSError as e:
+            if "4551" in str(e) or "Controle de Aplicativo" in str(e):
+                raise RuntimeError(
+                    "O recurso de segurança 'Controle Inteligente de Aplicativos' (Smart App Control) do Windows "
+                    "bloqueou o carregamento do PyTorch (shm.dll).\n"
+                    "Para solucionar:\n"
+                    "1. Abra o menu Iniciar e pesquise por 'Segurança do Windows'.\n"
+                    "2. Acesse 'Controle de aplicativos e do navegador'.\n"
+                    "3. Em 'Controle de Aplicativo Inteligente', selecione 'Desativado'."
+                ) from e
+            raise
+    return _model, _device
 
 def normalize_audio(input_path: str, output_path: str):
     """
@@ -47,7 +70,7 @@ def normalize_audio(input_path: str, output_path: str):
         print(f"Erro inesperado na normalizacao: {e}")
         raise
 
-def load_audio(path: str) -> tuple[torch.Tensor, int]:
+def load_audio(path: str):
     """
     Carrega o arquivo de áudio para um tensor PyTorch float32 no formato [canais, amostras].
     Usa soundfile como leitor primário de alta velocidade (libsndfile em C).
@@ -55,6 +78,7 @@ def load_audio(path: str) -> tuple[torch.Tensor, int]:
     Elimina a dependência problemática do torchaudio.load() com torchcodec no Windows.
     """
     try:
+        import torch
         data, sr = sf.read(path, dtype='float32', always_2d=True)
         # sf.read retorna [amostras, canais]. Transpomos para [canais, amostras]
         wav_torch = torch.from_numpy(data.T)
@@ -71,6 +95,12 @@ def process_demucs(temp_path: str, musica_folder: str):
     Recebe o caminho do áudio temporário e a pasta de destino.
     Aplica o Demucs e salva as 6 trilhas na pasta.
     """
+    import torch
+    import torchaudio
+    from demucs.apply import apply_model
+
+    model, device = get_demucs_model()
+
     wav_torch, sr = load_audio(temp_path)
     
     if sr != 44100:
@@ -81,7 +111,6 @@ def process_demucs(temp_path: str, musica_folder: str):
     if wav_torch.shape[0] == 1:
         wav_torch = wav_torch.repeat(2, 1)
     
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     sources = apply_model(model, wav_torch[None], device=device, shifts=0, overlap=0.1, segment=7)[0]
     stems_names = ["drums", "bass", "other", "vocals", "guitar", "piano"]
 

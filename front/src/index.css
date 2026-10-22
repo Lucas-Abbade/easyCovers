@@ -266,3 +266,93 @@ body {
 .stagger-item-2 { opacity: 0; animation: staggerSlideUp 0.4s ease-out 0.22s forwards; }
 .stagger-item-3 { opacity: 0; animation: staggerSlideUp 0.4s ease-out 0.32s forwards; }
 .stagger-item-4 { opacity: 0; animation: staggerSlideUp 0.4s ease-out 0.42s forwards; }
+
+
+/* ========================================================================= */
+/* DESIGN-ENGINEERING & MOTION FOUNDATIONS (make-interfaces-feel-better)     */
+/* ========================================================================= */
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+/* Tipografia óptica */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Contorno neutro para capas de álbuns e imagens de estúdio */
+.studio-img-outline {
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  outline-offset: -1px;
+}
+
+.dark .studio-img-outline {
+  outline-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Transições explícitas de alta precisão (nunca usar transition: all) */
+.studio-btn-transition {
+  transition-property: transform, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.studio-card-transition {
+  transition-property: transform, border-color, background-color, box-shadow, opacity;
+  transition-duration: 280ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Grid técnico de engenharia acústica para a Landing Page */
+.studio-grid-surface {
+  background-image:
+    linear-gradient(to right, rgba(43, 105, 230, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(43, 105, 230, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.dark .studio-grid-surface {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Pausa automática quando o container indica aba oculta */
+.animations-paused * {
+  animation-play-state: paused !important;
+}
+
+/* Respeito estrito a prefers-reduced-motion (Regra 3 de motion-foundations) */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .eq-bar-1,
+  .eq-bar-2,
+  .eq-bar-3,
+  .eq-bar-4,
+  .animate-pulse-glow,
+  .animate-spotify-float,
+  .animate-spotify-pulse,
+  .animate-shimmer {
+    animation: none !important;
+    transform: none !important;
+  }
+  .studio-btn-transition,
+  .studio-card-transition {
+    transition-property: opacity, background-color, border-color, color;
+    transition-duration: 120ms;
+  }
+}

@@ -10,8 +10,8 @@ from fastapi.staticfiles import StaticFiles
 
 # Importações dos nossos próprios módulos
 from .database import engine, Base, run_migrations
-# ADICIONADO: importação dos routers 'profile', 'music' e 'spotify'
-from .routers import auth, songs, upload, profile, music, spotify 
+# ADICIONADO: importação dos routers 'profile', 'music', 'spotify' e 'landing'
+from .routers import auth, songs, upload, profile, music, spotify, landing
 
 # Cria as tabelas no banco de dados e executa migrações
 Base.metadata.create_all(bind=engine)
@@ -49,10 +49,11 @@ app.include_router(auth.router)
 app.include_router(songs.router)
 app.include_router(upload.router)
 # ADICIONADO: Roteador de perfil e música externa
-# ADICIONADO: Roteador de perfil, música externa e Spotify OAuth
+# ADICIONADO: Roteador de perfil, música externa, Spotify OAuth e Landing Page Pública
 app.include_router(profile.router)
 app.include_router(music.router)
 app.include_router(spotify.router)
+app.include_router(landing.router)
 
 @app.get("/")
 def root():

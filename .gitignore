@@ -88,3 +88,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 *.local
+
+#pasta de skills ecc
+.agents/

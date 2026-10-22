@@ -114,6 +114,18 @@ const App = () => {
             <Login onLogin={handleLogin} />
           )
         } />
+
+        <Route path="/login" element={
+          user ? (
+            <Navigate
+              to={user.is_profile_completed === false ? "/edit-profile" : "/dashboard"}
+              state={user.is_profile_completed === false ? { isNewUser: true } : undefined}
+              replace
+            />
+          ) : (
+            <Login onLogin={handleLogin} initialShowAuth={true} />
+          )
+        } />
         
         <Route path="/dashboard" element={
           user ? <Dashboard email={user.username || user.email} user={user} songs={songs} onDeleteSong={handleDeleteSong} onLogout={handleLogout} /> 

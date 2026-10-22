@@ -95,3 +95,35 @@ class UserProfileUpdate(BaseModel):
     social_youtube: Optional[str] = None
     social_spotify: Optional[str] = None
     social_x: Optional[str] = None
+
+
+class ShowcaseTrackItem(BaseModel):
+    id: str
+    title: str
+    artist: str
+    album: Optional[str] = ""
+    genre: str
+    key: str
+    bpm: int
+    duration: int
+    cover: Optional[str] = ""
+    preview: Optional[str] = ""
+    stems_ready: List[str] = ["vocals", "drums", "bass", "guitar", "piano", "other"]
+
+
+class PublicPlatformStatsResponse(BaseModel):
+    status: str = "success"
+    total_songs_processed: int
+    total_musicians: int
+    total_stems_isolated: int
+    supported_stems_count: int = 6
+    genres_available: int = 16
+    engine_name: str = "Demucs v4 HT-6s"
+    latency_ms: int = 12
+
+
+class PublicShowcaseResponse(BaseModel):
+    status: str = "success"
+    cached: bool = False
+    featured_tracks: List[ShowcaseTrackItem] = []
+    recent_community_songs: List[SongSummary] = []
