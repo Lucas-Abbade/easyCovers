@@ -380,7 +380,7 @@ const DashboardHeroStudioRack = ({
             {/* Parafuso de Rack Esquerdo */}
             <span className="w-2.5 h-2.5 rounded-full bg-slate-700 border border-slate-500 shadow-inner" />
             <span className="text-[10px] font-mono font-black tracking-wider uppercase text-slate-300">
-              STUDIO RACK • AMP & VU BRIDGE
+              STUDIO RACK
             </span>
           </div>
 

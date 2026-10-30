@@ -114,11 +114,7 @@ const ScrollWaveDeconstructor = ({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight">
-                    Desconstrução Espectral no Scroll
-                  </span>
-                  <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/70 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60">
-                    <BoltAiIcon className="w-3 h-3" />
-                    SCROLL-DRIVEN
+                    Desconstrução Espectral
                   </span>
                 </div>
                 <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">

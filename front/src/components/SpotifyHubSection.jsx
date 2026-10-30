@@ -328,6 +328,7 @@ const SpotifyHubSection = ({
           album: track.album || '',
           duration: track.duration || 0,
           cover: track.cover || '',
+          preview: track.preview || '',
           suggested_genre: track.suggested_genre || 'Rock',
           original_key: track.original_key || 'Unknown',
         },

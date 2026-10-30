@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import html
 import json
 import base64
@@ -84,65 +85,103 @@ def _save_track_cover_cache():
 _load_track_cover_cache()
 
 
-def _is_valid_original_track_cover(cover_url: str, playlist_cover: str = "") -> bool:
+def _is_valid_original_track_cover(
+    cover_url: str, playlist_cover: str = "", track_id: str = ""
+) -> bool:
     """
-    Verifica se a URL de capa pertence realmente ao álbum/single original da música
-    e NÃO é a capa genérica/mosaico da playlist (prefixo ab67706c no Spotify).
+    Verifica se a URL de capa pertence realmente ao álbum/single original da música no Spotify
+    e NÃO é a capa genérica/mosaico da playlist (prefixo ab67706c) nem um fallback incorreto de outro álbum na Deezer.
     """
     if not cover_url:
         return False
     if playlist_cover and cover_url == playlist_cover:
         return False
-    # No CDN do Spotify, 'ab67706c' é capa customizada de playlist e 'ab677570' é avatar de usuário.
-    # Capas oficiais de músicas/álbuns usam 'ab67616d'.
-    if "ab67706c" in cover_url or "ab677570" in cover_url:
+    # No CDN do Spotify, 'ab67706c' é capa customizada de playlist, 'ab677570' é avatar de usuário e 'mosaic.scdn.co' é mosaico.
+    if (
+        "ab67706c" in cover_url
+        or "ab677570" in cover_url
+        or "mosaic.scdn.co" in cover_url
+    ):
         return False
+    # Se a música possui ID oficial de 22 caracteres do Spotify, exige capa autêntica do CDN do Spotify (nunca dzcdn.net)
+    if track_id and re.match(r"^[A-Za-z0-9]{22}$", track_id):
+        if "scdn.co" not in cover_url and "spotifycdn.com" not in cover_url:
+            return False
     return True
 
 
 def _resolve_single_track_cover(track_id: str, title: str = "", artist: str = "") -> str:
     """
-    Obtém a capa original oficial de uma faixa do Spotify via oEmbed (ou fallback no catálogo Deezer).
+    Obtém a capa original oficial de uma faixa do Spotify via oEmbed (com retentativa e fallback SSR da própria faixa).
+    Para faixas com ID oficial do Spotify (22 chars), nunca usa busca genérica da Deezer para evitar trocar o álbum original.
     """
     if not track_id:
         return ""
     cached = _TRACK_COVER_CACHE.get(track_id)
-    if cached and _is_valid_original_track_cover(cached):
+    if cached and _is_valid_original_track_cover(cached, "", track_id):
         return cached
 
-    # 1. Tenta o endpoint oficial oEmbed da faixa no Spotify
+    # 1. Para qualquer ID oficial de faixa do Spotify (22 chars), resolve estritamente via Spotify (oEmbed ou og:image da faixa)
     if re.match(r"^[A-Za-z0-9]{22}$", track_id):
+        for attempt in range(3):
+            try:
+                resp = _HTTP_SESSION.get(
+                    f"https://open.spotify.com/oembed?url=https://open.spotify.com/track/{track_id}",
+                    timeout=6,
+                )
+                if resp.status_code == 200:
+                    thumb = (resp.json().get("thumbnail_url") or "").strip()
+                    if thumb and _is_valid_original_track_cover(thumb, "", track_id):
+                        _TRACK_COVER_CACHE[track_id] = thumb
+                        return thumb
+                elif resp.status_code == 429:
+                    time.sleep(0.25 * (attempt + 1))
+            except Exception:
+                if attempt < 2:
+                    time.sleep(0.15 * (attempt + 1))
+
+        # Fallback secundário oficial dentro do próprio Spotify (og:image da página da música)
         try:
-            resp = _HTTP_SESSION.get(
-                f"https://open.spotify.com/oembed?url=https://open.spotify.com/track/{track_id}",
+            ssr_resp = _HTTP_SESSION.get(
+                f"https://open.spotify.com/track/{track_id}",
+                headers=SSR_HEADERS,
                 timeout=6,
             )
-            if resp.status_code == 200:
-                thumb = (resp.json().get("thumbnail_url") or "").strip()
-                if thumb:
-                    _TRACK_COVER_CACHE[track_id] = thumb
-                    return thumb
+            if ssr_resp.status_code == 200:
+                og_match = re.search(
+                    r'<meta\s+property=["\']og:image["\']\s+content=["\'](https://[^"\']+ab67616d[^"\']+)["\']',
+                    ssr_resp.text,
+                )
+                if og_match:
+                    thumb = og_match.group(1).strip()
+                    if _is_valid_original_track_cover(thumb, "", track_id):
+                        _TRACK_COVER_CACHE[track_id] = thumb
+                        return thumb
         except Exception:
             pass
 
-    # 2. Fallback: busca a capa original do single/álbum no catálogo Deezer
-    if title:
-        clean_title = re.sub(r"\s*[-–(].*$", "", title).strip() or title
-        first_artist = (artist or "").split(",")[0].strip()
-        queries = [f"{title} {first_artist}".strip()]
-        if clean_title != title:
-            queries.append(f"{clean_title} {first_artist}".strip())
+        return ""
 
-        for q in queries:
-            try:
-                d_resp = _HTTP_SESSION.get(
-                    f"https://api.deezer.com/search?q={urllib.parse.quote(q)}&limit=1",
-                    timeout=5,
-                )
-                if d_resp.status_code == 200:
-                    items = d_resp.json().get("data") or []
-                    if items:
-                        album = items[0].get("album") or {}
+    # 2. Fallback restrito apenas para faixas sem ID do Spotify: valida correspondência de título/artista
+    if title:
+        first_artist = (artist or "").split(",")[0].strip()
+        q = f"{title} {first_artist}".strip()
+        try:
+            d_resp = _HTTP_SESSION.get(
+                f"https://api.deezer.com/search?q={urllib.parse.quote(q)}&limit=5",
+                timeout=5,
+            )
+            if d_resp.status_code == 200:
+                items = d_resp.json().get("data") or []
+                is_live_query = bool(re.search(r"\b(live|ao vivo)\b", title, re.IGNORECASE))
+                for item in items:
+                    item_title = item.get("title") or ""
+                    item_album = (item.get("album") or {}).get("title") or ""
+                    item_live = bool(
+                        re.search(r"\b(live|ao vivo)\b", f"{item_title} {item_album}", re.IGNORECASE)
+                    )
+                    if item_live == is_live_query:
+                        album = item.get("album") or {}
                         cover = (
                             album.get("cover_medium")
                             or album.get("cover_big")
@@ -152,8 +191,8 @@ def _resolve_single_track_cover(track_id: str, title: str = "", artist: str = ""
                         if cover:
                             _TRACK_COVER_CACHE[track_id] = cover
                             return cover
-            except Exception:
-                pass
+        except Exception:
+            pass
 
     return ""
 
@@ -162,8 +201,8 @@ def _ensure_tracks_have_original_covers(
     tracks: List[Dict[str, Any]], playlist_cover: str = ""
 ) -> bool:
     """
-    Garante que todas as músicas da lista tenham sua própria capa original de álbum/single
-    (e nunca a imagem da playlist). Resolve em paralelo via ThreadPoolExecutor + Cache.
+    Garante que todas as músicas da lista tenham sua própria capa original de álbum/single no Spotify
+    (e nunca a imagem da playlist ou capa trocada de outro álbum). Resolve em paralelo via ThreadPoolExecutor + Cache.
     Retorna True caso alguma faixa tenha sido atualizada.
     """
     if not tracks:
@@ -175,14 +214,14 @@ def _ensure_tracks_have_original_covers(
     for tr in tracks:
         tid = tr.get("id") or ""
         current_cover = tr.get("cover") or ""
-        if _is_valid_original_track_cover(current_cover, playlist_cover):
+        if _is_valid_original_track_cover(current_cover, playlist_cover, tid):
             if tid and tid not in _TRACK_COVER_CACHE:
                 _TRACK_COVER_CACHE[tid] = current_cover
             continue
 
-        # Verifica se já está no cache em memória
+        # Verifica se já está no cache em memória com capa oficial válida do Spotify
         cached = _TRACK_COVER_CACHE.get(tid)
-        if cached and _is_valid_original_track_cover(cached, playlist_cover):
+        if cached and _is_valid_original_track_cover(cached, playlist_cover, tid):
             tr["cover"] = cached
             updated = True
         else:
@@ -196,7 +235,7 @@ def _ensure_tracks_have_original_covers(
                 tr_obj.get("artist") or "",
             )
 
-        with ThreadPoolExecutor(max_workers=24) as executor:
+        with ThreadPoolExecutor(max_workers=12) as executor:
             resolved_covers = list(executor.map(_resolve_item, to_resolve))
 
         for tr_obj, new_cover in zip(to_resolve, resolved_covers):
@@ -466,9 +505,8 @@ def _fetch_real_spotify_playlist(
         except Exception:
             pass
 
-    # Se for playlist, busca o HTML SSR da playlist para extrair rapidamente as capas originais das 30 primeiras faixas
-    # e o nome real do dono da playlist
-    ssr_track_covers: Dict[str, str] = {}
+    # Se for playlist, busca o HTML SSR apenas para extrair o nome real do dono da playlist.
+    # As capas individuais de cada faixa são resolvidas de forma 100% determinística por track_id via oEmbed/cache.
     if entity_type == "playlist":
         try:
             ssr_resp = _HTTP_SESSION.get(
@@ -485,16 +523,6 @@ def _fetch_real_spotify_playlist(
                     extracted_owner = html.unescape(owner_match.group(1)).strip()
                     if extracted_owner:
                         owner = extracted_owner
-
-                pairs = re.findall(
-                    r'src=["\'](https://i\.scdn\.co/image/ab67616d[A-Za-z0-9]+)["\'].{1,600}?href=["\']/track/([A-Za-z0-9]{22})["\']',
-                    ssr_html,
-                    re.DOTALL,
-                )
-                for img_url, tid in pairs:
-                    hi_res = img_url.replace("ab67616d00004851", "ab67616d00001e02")
-                    ssr_track_covers[tid] = hi_res
-                    _TRACK_COVER_CACHE[tid] = hi_res
         except Exception:
             pass
 
@@ -549,14 +577,15 @@ def _fetch_real_spotify_playlist(
         t_duration = int((item.get("duration") or 0) / 1000)
         t_preview = (item.get("audioPreview") or {}).get("url") or ""
 
-        # Para álbum, a capa da faixa é a própria capa do álbum; para playlist, usa a capa individual da música!
+        # Para álbum, a capa da faixa é a própria capa do álbum; para playlist, usa exclusivamente a capa individual oficial da música!
         if entity_type == "album":
             individual_cover = cover_url
         else:
+            cached_cov = _TRACK_COVER_CACHE.get(t_id) or ""
             individual_cover = (
-                ssr_track_covers.get(t_id)
-                or _TRACK_COVER_CACHE.get(t_id)
-                or ""
+                cached_cov
+                if _is_valid_original_track_cover(cached_cov, cover_url, t_id)
+                else ""
             )
 
         tracks.append({
@@ -572,11 +601,9 @@ def _fetch_real_spotify_playlist(
             "external_url": f"https://open.spotify.com/track/{t_id}",
         })
 
-    # Resolve em paralelo as capas originais restantes (ex: faixas 31..100 da playlist)
+    # Resolve em paralelo as capas originais restantes de cada faixa via oEmbed
     if entity_type == "playlist" and resolve_all_covers:
         _ensure_tracks_have_original_covers(tracks, cover_url)
-    elif ssr_track_covers:
-        _save_track_cover_cache()
 
     return {
         "id": entity_id,
@@ -1346,8 +1373,10 @@ def toggle_user_spotify_liked_track(
         msg = f"'{payload.title}' removida das suas Músicas Curtidas."
     else:
         cover = payload.cover or ""
-        if not _is_valid_original_track_cover(cover):
+        if not _is_valid_original_track_cover(cover, "", payload.id):
             cover = _resolve_single_track_cover(payload.id, payload.title, payload.artist)
+            if cover:
+                _save_track_cover_cache()
         saved_liked.insert(
             0,
             {
@@ -1375,6 +1404,26 @@ def toggle_user_spotify_liked_track(
         "is_liked": is_liked,
         "message": msg,
         "total": len(saved_liked),
+    }
+
+
+@router.get("/track-cover/{track_id}")
+def get_spotify_track_original_cover(
+    track_id: str,
+    title: str = Query("", description="Título opcional da música"),
+    artist: str = Query("", description="Artista opcional da música"),
+):
+    """
+    Retorna a capa original oficial do álbum/single de uma música do Spotify pelo seu track_id via oEmbed/cache.
+    """
+    was_cached = track_id in _TRACK_COVER_CACHE
+    cover = _resolve_single_track_cover(track_id, title, artist)
+    if cover and not was_cached:
+        _save_track_cover_cache()
+    return {
+        "status": "success",
+        "track_id": track_id,
+        "cover": cover,
     }
 
 

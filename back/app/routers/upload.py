@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import uuid
 import glob
@@ -10,6 +11,7 @@ from yt_dlp import YoutubeDL
 from ..database import get_db
 from ..models import Song
 from ..services.audio_service import process_demucs, normalize_audio
+from .spotify import _resolve_single_track_cover
 
 router = APIRouter(tags=["Upload"])
 
@@ -306,20 +308,23 @@ async def upload_from_catalog(data: dict, db: Session = Depends(get_db)):
     original_key = data.get("original_key") or "Unknown"
     cover_image_url = data.get("cover_image_url")
 
-    # Garante que músicas vindas da API sempre utilizem a capa oficial do álbum na Deezer
+    # Garante que músicas vindas da API preservem a capa oficial do álbum (Spotify oEmbed ou Deezer)
     if not cover_image_url and deezer_track_id:
-        try:
-            track_resp = requests.get(f"https://api.deezer.com/track/{deezer_track_id}", timeout=6)
-            if track_resp.status_code == 200:
-                album_info = track_resp.json().get("album", {})
-                cover_image_url = (
-                    album_info.get("cover_xl") or
-                    album_info.get("cover_big") or
-                    album_info.get("cover_medium") or
-                    album_info.get("cover")
-                )
-        except Exception:
-            pass
+        if re.match(r"^[A-Za-z0-9]{22}$", deezer_track_id):
+            cover_image_url = _resolve_single_track_cover(deezer_track_id, title, artist) or None
+        elif deezer_track_id.isdigit():
+            try:
+                track_resp = requests.get(f"https://api.deezer.com/track/{deezer_track_id}", timeout=6)
+                if track_resp.status_code == 200:
+                    album_info = track_resp.json().get("album", {})
+                    cover_image_url = (
+                        album_info.get("cover_xl") or
+                        album_info.get("cover_big") or
+                        album_info.get("cover_medium") or
+                        album_info.get("cover")
+                    )
+            except Exception:
+                pass
 
     musica_folder = None
     downloaded_file = None

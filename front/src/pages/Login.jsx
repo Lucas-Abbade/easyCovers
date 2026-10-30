@@ -1316,9 +1316,6 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
                         <ScissorsIcon className="w-4 h-4" />
                         ISOLAMENTO NEURAL DE 6 CANAIS
                       </span>
-                      <span className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 tabular-nums">
-                        HT-Demucs 6s
-                      </span>
                     </div>
 
                     <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight text-balance">
@@ -1388,9 +1385,6 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
                       <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400">
                         <PitchShiftIcon className="w-4 h-4" />
                         TRANSPOSIÇÃO HARMÔNICA EM TEMPO REAL
-                      </span>
-                      <span className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 tabular-nums">
-                        Tone.js DSP
                       </span>
                     </div>
 

@@ -1,6 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { getGenreImage } from '../utils/genreImages';
 import ThemeToggle from './ThemeToggle';
+import DashboardStudioBackground from './DashboardStudioBackground';
+import StudioTiltCard from './StudioTiltCard';
+import {
+  useScrollVariable,
+  useDocumentVisibility,
+} from '../utils/motionTokens';
 
 // Dicas dinâmicas exibidas durante o processamento
 const MUSICIAN_TIPS = [
@@ -26,15 +32,65 @@ const MUSICIAN_TIPS = [
   }
 ];
 
-// Configuração das 6 stems separadas pelo EasyCovers
+// Configuração 3D das 6 stems separadas pelo EasyCovers
 const STEMS_INFO = [
-  { id: 'vocals', name: 'Vocais', icon: '🎤', color: 'from-purple-500 to-indigo-500' },
-  { id: 'drums', name: 'Bateria', icon: '🥁', color: 'from-amber-500 to-orange-500' },
-  { id: 'bass', name: 'Baixo', icon: '🎸', color: 'from-emerald-500 to-teal-500' },
-  { id: 'guitar', name: 'Guitarra', icon: '🎸', color: 'from-blue-500 to-cyan-500' },
-  { id: 'piano', name: 'Teclado / Piano', icon: '🎹', color: 'from-pink-500 to-rose-500' },
-  { id: 'other', name: 'Outros / Sintetizadores', icon: '🎛️', color: 'from-gray-500 to-slate-600' }
+  {
+    id: 'vocals',
+    name: 'Vocais',
+    icon: '🎤',
+    img3d: '/assets/parallax/studio_condenser_mic.png',
+    freq: '120Hz–12kHz',
+    barColor: 'bg-purple-500',
+    ledColor: 'bg-purple-400 shadow-[0_0_8px_#a855f7]',
+  },
+  {
+    id: 'drums',
+    name: 'Bateria',
+    icon: '🥁',
+    img3d: '/assets/parallax/instrument_drums.png',
+    freq: '40Hz–16kHz',
+    barColor: 'bg-amber-500',
+    ledColor: 'bg-amber-400 shadow-[0_0_8px_#f59e0b]',
+  },
+  {
+    id: 'bass',
+    name: 'Baixo',
+    icon: '🎸',
+    img3d: '/assets/parallax/instrument_bass.png',
+    freq: '32Hz–800Hz',
+    barColor: 'bg-emerald-500',
+    ledColor: 'bg-emerald-400 shadow-[0_0_8px_#10b981]',
+  },
+  {
+    id: 'guitar',
+    name: 'Guitarra',
+    icon: '🎸',
+    img3d: '/assets/parallax/instrument_guitar.png',
+    freq: '80Hz–8kHz',
+    barColor: 'bg-blue-500',
+    ledColor: 'bg-blue-400 shadow-[0_0_8px_#3b82f6]',
+  },
+  {
+    id: 'piano',
+    name: 'Teclado / Piano',
+    icon: '🎹',
+    img3d: '/assets/parallax/instrument_mic_keys.png',
+    freq: '65Hz–10kHz',
+    barColor: 'bg-pink-500',
+    ledColor: 'bg-pink-400 shadow-[0_0_8px_#ec4899]',
+  },
+  {
+    id: 'other',
+    name: 'Outros / Synths',
+    icon: '🎛️',
+    img3d: '/assets/parallax/studio_analog_mixer.png',
+    freq: 'FULL SPECTRUM',
+    barColor: 'bg-cyan-500',
+    ledColor: 'bg-cyan-400 shadow-[0_0_8px_#06b6d4]',
+  }
 ];
+
+const LED_SEGMENTS = 24;
 
 const AudioProcessingScreen = ({
   songInfo,
@@ -47,6 +103,10 @@ const AudioProcessingScreen = ({
   onOpenMixer,
   onGoToDashboard
 }) => {
+  const processingRootRef = useRef(null);
+  useScrollVariable(processingRootRef);
+  const isTabVisible = useDocumentVisibility();
+
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -95,27 +155,27 @@ const AudioProcessingScreen = ({
     }
   ], [isYoutube, isCatalog]);
 
-  // Cronômetro de tempo decorrido
+  // Cronômetro de tempo decorrido (pausa se a aba estiver oculta ou se finalizado)
   useEffect(() => {
-    if (status !== 'processing') return;
+    if (status !== 'processing' || !isTabVisible) return undefined;
 
     const timer = setInterval(() => {
       setElapsedSeconds(prev => prev + 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [status]);
+  }, [status, isTabVisible]);
 
   // Rotação suave do carrossel de dicas a cada 6 segundos
   useEffect(() => {
-    if (status !== 'processing') return;
+    if (status !== 'processing' || !isTabVisible) return undefined;
 
     const interval = setInterval(() => {
       setCurrentTipIndex(prev => (prev + 1) % MUSICIAN_TIPS.length);
     }, 6000);
 
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, isTabVisible]);
 
   // Formatação de minutos e segundos (MM:SS)
   const formatTime = (secs) => {
@@ -135,29 +195,50 @@ const AudioProcessingScreen = ({
     return "Finalizando detalhes...";
   }, [progress, status]);
 
+  const clampedPercent = Math.min(100, Math.max(0, Math.round(progress)));
+  const activeLedCount = Math.round((clampedPercent / 100) * LED_SEGMENTS);
+
   return (
     <div 
-      className="font-sans min-h-screen bg-repeat flex flex-col"
+      ref={processingRootRef}
+      className={`font-sans min-h-screen bg-repeat flex flex-col text-slate-800 dark:text-slate-100 relative overflow-x-hidden ${
+        !isTabVisible ? 'animations-paused' : ''
+      }`}
       style={{ 
         backgroundImage: "url('/assets/dashboard_bg.jpg')",
         backgroundSize: "320px 320px",
         backgroundColor: "var(--color-brand-light)"
       }}
     >
-      {/* Header Padronizado EasyCovers */}
-      <header className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-md border-b border-slate-200/80 dark:border-slate-800 px-6 md:px-8 py-3 flex justify-between items-center sticky top-0 z-30 transition-all">
+      {/* Camada Parallax 3D de Sala de Controle durante o isolamento neural */}
+      <DashboardStudioBackground
+        studioLiveMode={status === 'processing' || status === 'success'}
+        phantomPower={true}
+        hoveredSong={{
+          name: songInfo?.name || 'HTDEMUCS 6-STEM ENGINE',
+          genre: songInfo?.genre || 'NEURAL DSP',
+        }}
+      />
+
+      {/* Header Padronizado EasyCovers com Glassmorphism */}
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-40">
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
             <img 
               src="/assets/logo_symbol.png" 
               alt="EasyCovers Logo" 
-              className="h-10 md:h-12 w-auto object-contain drop-shadow-sm"
+              className="h-10 w-auto object-contain drop-shadow-xs"
             />
-            <div>
-              <h1 className="text-xl md:text-2xl font-extrabold text-[var(--color-brand-deep)] leading-tight">
-                EasyCovers
-              </h1>
-              <span className="text-xs text-gray-500 dark:text-slate-400 font-medium hidden sm:inline-block">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-[var(--color-brand-deep)] leading-tight tracking-tight">
+                  EasyCovers
+                </h1>
+                <span className="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 tracking-wider">
+                  DSP Engine
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:inline-block">
                 AI Audio Stem Separation Studio
               </span>
             </div>
@@ -168,19 +249,19 @@ const AudioProcessingScreen = ({
         {/* Status Badge Superior */}
         <div className="flex items-center gap-2">
           {status === 'processing' && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs md:text-sm font-semibold shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-bold shadow-2xs">
               <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-brand-medium)] animate-pulse"></span>
               <span>Processando em tempo real</span>
             </div>
           )}
           {status === 'success' && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs md:text-sm font-semibold shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-bold shadow-2xs">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
               <span>Processamento Concluído</span>
             </div>
           )}
           {status === 'error' && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs md:text-sm font-semibold shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs sm:text-sm font-bold shadow-2xs">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
               <span>Ocorreu uma falha</span>
             </div>
@@ -189,150 +270,202 @@ const AudioProcessingScreen = ({
       </header>
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 my-4 md:my-6 flex flex-col gap-6">
+      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto p-4 md:p-8 my-2 md:my-4 flex flex-col gap-6">
 
-        {/* Card de Resumo da Música */}
-        <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-white/80 dark:border-slate-800 transition-all">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[var(--color-brand-medium)] to-[var(--color-brand-dark)] flex items-center justify-center text-white shadow-md shrink-0 relative overflow-hidden">
-                <img 
-                  src={songInfo?.cover_image_url || getGenreImage(songInfo?.genre)} 
-                  alt="Capa da música" 
-                  className="w-full h-full object-cover"
-                />
-                {status === 'processing' && (
-                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h2 className="text-xl md:text-2xl font-black text-gray-900 dark:text-slate-100 leading-tight">
-                    {songInfo?.name || "Música em Processamento"}
-                  </h2>
-                  {isCatalog ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                      <span>🎧</span>
-                      Catálogo Deezer
-                    </span>
-                  ) : isYoutube ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800">
-                      <img src="/assets/icons/icon_youtube.png" alt="YouTube" className="w-3.5 h-3.5 object-contain" />
-                      YouTube
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                      <img src="/assets/icons/icon_upload_cloud.png" alt="Arquivo" className="w-3.5 h-3.5 object-contain" />
-                      Arquivo de Áudio
-                    </span>
+        {/* Card 3D de Resumo da Música no Rack */}
+        <StudioTiltCard maxTilt={1.5} hoverScale={1.003}>
+          <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-5 sm:p-6 shadow-lg border border-white/80 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-[var(--color-brand-medium)] to-[var(--color-brand-dark)] flex items-center justify-center text-white shadow-md shrink-0 relative overflow-hidden studio-img-outline">
+                  <img 
+                    src={songInfo?.cover_image_url || getGenreImage(songInfo?.genre)} 
+                    alt="Capa da música" 
+                    className="w-full h-full object-cover"
+                  />
+                  {status === 'processing' && (
+                    <div className="absolute inset-0 bg-blue-500/20 animate-pulse"></div>
                   )}
                 </div>
-                <p className="text-gray-600 dark:text-slate-300 font-medium text-sm md:text-base">
-                  {songInfo?.artist || "Artista / Banda"}
-                </p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-900 text-amber-400 border border-slate-700">
+                      MASTER SIGNAL INTAKE
+                    </span>
+                    {isCatalog ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                        <span>🎧</span>
+                        Catálogo Deezer / Spotify
+                      </span>
+                    ) : isYoutube ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800">
+                        <img src="/assets/icons/icon_youtube.png" alt="YouTube" className="w-3.5 h-3.5 object-contain" />
+                        YouTube
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                        <img src="/assets/icons/icon_upload_cloud.png" alt="Arquivo" className="w-3.5 h-3.5 object-contain" />
+                        Arquivo de Áudio
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 leading-tight truncate">
+                    {songInfo?.name || "Música em Processamento"}
+                  </h2>
+                  <p className="text-slate-600 dark:text-slate-300 font-semibold text-sm md:text-base truncate">
+                    {songInfo?.artist || "Artista / Banda"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Badges de Metadados Musicais */}
+              <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-center shrink-0 tabular-nums">
+                {songInfo?.genre && (
+                  <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 shadow-2xs">
+                    🎵 {songInfo.genre}
+                  </div>
+                )}
+                {songInfo?.instrument && (
+                  <div className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-dark)] dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800 shadow-2xs">
+                    🎸 {songInfo.instrument}
+                  </div>
+                )}
+                {songInfo?.original_key && songInfo.original_key !== 'Unknown' && (
+                  <div className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-bold border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+                    🎼 Tom: {songInfo.original_key}
+                  </div>
+                )}
               </div>
             </div>
+          </section>
+        </StudioTiltCard>
 
-            {/* Badges de Metadados Musicais */}
-            <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-center">
-              {songInfo?.genre && (
-                <div className="px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 text-xs font-bold border border-gray-200 dark:border-slate-700 shadow-xs">
-                  🎵 {songInfo.genre}
-                </div>
-              )}
-              {songInfo?.instrument && (
-                <div className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-light)] dark:bg-blue-950/60 text-[var(--color-brand-dark)] dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800 shadow-xs">
-                  🎸 {songInfo.instrument}
-                </div>
-              )}
-              {songInfo?.original_key && songInfo.original_key !== 'Unknown' && (
-                <div className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 shadow-xs">
-                  🎼 Tom: {songInfo.original_key}
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* SEÇÃO PRINCIPAL: Barra de Progresso e Métricas */}
-        <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border-t-4 border-[var(--color-brand-medium)] border-x border-b border-slate-200/80 dark:border-slate-800 flex flex-col gap-6 transition-all">
+        {/* SEÇÃO PRINCIPAL: Console DSP, Barra Rack LED Bargraph e 6 Stems 3D */}
+        <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200/90 dark:border-slate-800 flex flex-col gap-6">
           
           {/* Cabeçalho da Barra de Progresso */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--color-brand-medium)] dark:text-blue-400">
-                {status === 'success' ? 'Conclusão' : `Etapa ${currentStage} de ${stages.length}`}
-              </span>
-              <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-slate-100 mt-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-[var(--color-brand-medium)] dark:text-blue-400">
+                  {status === 'success' ? 'DSP CONCLUÍDO' : `STAGE 0${currentStage} / 0${stages.length}`}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+                  • EBU R128 / 44.1kHz
+                </span>
+              </div>
+              <h3 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5 text-balance">
                 {status === 'success' 
                   ? "Separação Concluída com Sucesso!" 
                   : status === 'error' 
                   ? "Falha durante o processamento" 
                   : stages[currentStage - 1]?.name || "Processando faixas..."}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 max-w-xl">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl text-pretty">
                 {status === 'success' 
-                  ? "As 6 stems foram isoladas com alta pureza e estão prontas para tocar ou praticar." 
+                  ? "As 6 stems foram isoladas com alta pureza e estão prontas para tocar ou praticar no Console Mixer." 
                   : status === 'error'
                   ? errorMessage || "Ocorreu um imprevisto durante o processamento da faixa."
                   : stages[currentStage - 1]?.desc}
               </p>
             </div>
 
-            {/* Contador de Porcentagem & Tempo */}
-            <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center shrink-0">
+            {/* Contador de Porcentagem & Tempo em Tabular-Nums */}
+            <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center shrink-0 tabular-nums">
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl md:text-5xl font-black text-[var(--color-brand-deep)] tabular-nums tracking-tight">
-                  {Math.min(100, Math.max(0, Math.round(progress)))}
+                  {clampedPercent}
                 </span>
                 <span className="text-xl font-bold text-[var(--color-brand-medium)] dark:text-blue-400">%</span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-slate-400 font-semibold mt-1">
-                <span>⏱️ {formatTime(elapsedSeconds)}</span>
+              <div className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 tabular-nums">
+                <span className="font-mono">⏱️ {formatTime(elapsedSeconds)}</span>
                 <span>•</span>
                 <span className="text-[var(--color-brand-medium)] dark:text-blue-400">{estimatedRemainingText}</span>
               </div>
             </div>
           </div>
 
-          {/* BARRA DE CARREGAMENTO (Design Sênior com Shimmer e Glow) */}
-          <div className="relative w-full">
+          {/* CHASSI RACK LED BARGRAPH + BARRA DE PROGRESSO ACESSÍVEL */}
+          <div className="rounded-2xl p-3.5 bg-[#0B1325] border border-slate-800 shadow-inner flex flex-col gap-2.5">
+            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+              <span>HTDEMUCS v4 NEURAL SPECTRUM BUS</span>
+              <span className="text-emerald-400 tabular-nums">
+                {status === 'success'
+                  ? 'LOCKED • 0.0 dBFS'
+                  : status === 'error'
+                  ? 'SIGNAL FAULT'
+                  : `BUFFER ${clampedPercent}%`}
+              </span>
+            </div>
+
+            {/* Barra contínua acessível com Shimmer */}
             <div 
               role="progressbar" 
-              aria-valuenow={Math.round(progress)} 
+              aria-valuenow={clampedPercent} 
               aria-valuemin="0" 
               aria-valuemax="100"
-              className="w-full h-5 md:h-6 bg-blue-50 dark:bg-slate-800 rounded-full p-1 border border-blue-200 dark:border-slate-700 shadow-inner overflow-hidden flex items-center"
+              className="w-full h-4 bg-slate-900 rounded-full p-0.5 border border-slate-700/80 shadow-inner overflow-hidden flex items-center"
             >
               <div 
-                className={`h-full rounded-full transition-all duration-500 ease-out shadow-sm relative overflow-hidden ${
+                className={`h-full rounded-full studio-card-transition relative overflow-hidden ${
                   status === 'error'
                     ? 'bg-rose-500'
                     : status === 'success'
                     ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
-                    : 'bg-gradient-to-r from-blue-500 via-[var(--color-brand-medium)] to-indigo-600 animate-shimmer'
+                    : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-amber-400 animate-shimmer'
                 }`}
                 style={{ width: `${Math.min(100, Math.max(progress, 3))}%` }}
               >
-                {/* Linha de reflexo de vidro */}
-                <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/25 rounded-t-full"></div>
+                <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/25 rounded-t-full" />
               </div>
             </div>
 
+            {/* Bargraph Segmentado de Hardware (24 LEDs de Rack) */}
+            <div
+              className="grid gap-1 pt-0.5"
+              style={{ gridTemplateColumns: `repeat(${LED_SEGMENTS}, minmax(0, 1fr))` }}
+              aria-hidden="true"
+            >
+              {Array.from({ length: LED_SEGMENTS }).map((_, idx) => {
+                const isLit = idx < activeLedCount;
+                const isAmberZone = idx >= 16 && idx < 21;
+                const isPeakZone = idx >= 21;
+
+                let litColor = 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]';
+                if (status === 'error') {
+                  litColor = 'bg-rose-500';
+                } else if (isPeakZone) {
+                  litColor = 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]';
+                } else if (isAmberZone) {
+                  litColor = 'bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]';
+                }
+
+                return (
+                  <span
+                    key={idx}
+                    className={`h-2 rounded-xs transition-colors duration-200 ${
+                      isLit ? litColor : 'bg-slate-800/90'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+
             {/* Marcadores de Etapas sob a barra */}
-            <div className="flex justify-between items-center px-1 mt-2 text-[11px] font-bold text-gray-400 dark:text-slate-500">
-              <span>0% Inicial</span>
-              <span className={progress >= 20 ? "text-[var(--color-brand-medium)] dark:text-blue-400" : ""}>20% Áudio</span>
-              <span className={progress >= 40 ? "text-[var(--color-brand-medium)] dark:text-blue-400" : ""}>40% IA Demucs</span>
-              <span className={progress >= 80 ? "text-[var(--color-brand-medium)] dark:text-blue-400" : ""}>80% Stems WAV</span>
-              <span className={progress >= 100 ? "text-emerald-600 dark:text-emerald-400" : ""}>100% Concluído</span>
+            <div className="flex justify-between items-center px-0.5 text-[10px] font-mono font-bold text-slate-400 tabular-nums">
+              <span>0% INPUT</span>
+              <span className={progress >= 20 ? "text-cyan-400" : ""}>20% EBU R128</span>
+              <span className={progress >= 40 ? "text-blue-400" : ""}>40% HTDEMUCS IA</span>
+              <span className={progress >= 80 ? "text-amber-400" : ""}>80% WAV STEMS</span>
+              <span className={progress >= 100 ? "text-emerald-400" : ""}>100% READY</span>
             </div>
           </div>
 
-          {/* LINHA DO TEMPO / STEPPER DAS ETAPAS */}
-          <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
-              Progresso das Etapas
+          {/* LINHA DO TEMPO / STEPPER DAS 5 ETAPAS */}
+          <div className="pt-2 flex flex-col gap-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Progresso das Etapas de Estúdio
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               {stages.map((stage) => {
@@ -342,21 +475,20 @@ const AudioProcessingScreen = ({
                 return (
                   <div 
                     key={stage.id} 
-                    className={`flex md:flex-col items-center md:items-start gap-3 p-3 rounded-xl transition-all border ${
+                    className={`flex md:flex-col items-center md:items-start gap-3 p-3.5 rounded-2xl studio-card-transition border ${
                       isCompleted 
                         ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/70 text-emerald-900 dark:text-emerald-200' 
                         : isCurrent 
                         ? 'bg-blue-50/90 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 shadow-sm animate-pulse-glow' 
-                        : 'bg-gray-50/60 dark:bg-slate-800/50 border-gray-200/80 dark:border-slate-700/80 text-gray-400 dark:text-slate-500'
+                        : 'bg-slate-50/60 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700/80 text-slate-400 dark:text-slate-500'
                     }`}
                   >
-                    {/* Indicador de Ícone */}
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-xs transition-colors ${
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-mono font-bold text-xs tabular-nums ${
                       isCompleted
-                        ? 'bg-emerald-500 text-white shadow-xs'
+                        ? 'bg-emerald-500 text-white shadow-2xs'
                         : isCurrent
-                        ? 'bg-[var(--color-brand-medium)] text-white shadow-md'
-                        : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
+                        ? 'bg-[var(--color-brand-medium)] text-white shadow-sm'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                     }`}>
                       {isCompleted ? (
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -365,15 +497,15 @@ const AudioProcessingScreen = ({
                       ) : isCurrent ? (
                         <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                       ) : (
-                        stage.id
+                        `0${stage.id}`
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-bold leading-tight ${isCurrent ? 'text-[var(--color-brand-deep)] dark:text-blue-200' : isCompleted ? 'text-emerald-950 dark:text-emerald-200' : 'text-gray-500 dark:text-slate-400'}`}>
+                      <p className={`text-xs font-extrabold leading-tight ${isCurrent ? 'text-[var(--color-brand-deep)] dark:text-blue-200' : isCompleted ? 'text-emerald-950 dark:text-emerald-200' : 'text-slate-500 dark:text-slate-400'}`}>
                         {stage.name}
                       </p>
-                      <span className="text-[10px] text-gray-500 dark:text-slate-400 hidden md:block mt-1 line-clamp-2">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden md:block mt-1">
                         {isCompleted ? 'Concluído' : isCurrent ? 'Em andamento...' : 'Aguardando'}
                       </span>
                     </div>
@@ -383,63 +515,101 @@ const AudioProcessingScreen = ({
             </div>
           </div>
 
-          {/* VISUALIZADOR DAS 6 STEMS POR IA */}
-          <div className="pt-4 border-t border-gray-100 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 flex items-center gap-2">
-                <span>🎚️ Isolamento de Faixas em Tempo Real</span>
-                <span className="text-[11px] font-semibold text-[var(--color-brand-medium)] dark:text-blue-400">
+          {/* VISUALIZADOR 3D DAS 6 STEMS POR IA (StudioTiltCard) */}
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3.5">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <span>🎚️ Isolamento de Canais 3D em Tempo Real</span>
+                <span className="text-[11px] font-mono font-bold text-[var(--color-brand-medium)] dark:text-blue-400">
                   (HTDemucs 6 Stems)
                 </span>
               </h4>
-              <span className="text-xs text-gray-400 dark:text-slate-500 font-medium">Formato Lossless WAV</span>
+              <span className="text-xs font-mono text-slate-400 dark:text-slate-500 font-semibold tabular-nums">
+                Lossless WAV • 44.1kHz
+              </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
               {STEMS_INFO.map((stem) => {
-                // Durante a etapa 3 em diante, as faixas começam a ser visualmente extraídas
                 const isStemActive = currentStage >= 3;
                 const isStemDone = currentStage >= 4 || status === 'success';
+                const isFocusedInstrument =
+                  songInfo?.instrument &&
+                  stem.name.toLowerCase().includes(songInfo.instrument.toLowerCase());
 
                 return (
-                  <div 
-                    key={stem.id} 
-                    className={`p-3 rounded-xl border flex flex-col items-center text-center transition-all ${
-                      isStemDone
-                        ? 'bg-white dark:bg-slate-800/90 border-emerald-200 dark:border-emerald-800/70 shadow-sm'
-                        : isStemActive
-                        ? 'bg-blue-50/50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/70 shadow-sm'
-                        : 'bg-gray-50/50 dark:bg-slate-800/40 border-gray-200 dark:border-slate-700/70 opacity-60'
-                    }`}
+                  <StudioTiltCard
+                    key={stem.id}
+                    maxTilt={4.5}
+                    hoverScale={1.03}
                   >
-                    <span className="text-2xl mb-1">{stem.icon}</span>
-                    <span className="text-xs font-bold text-gray-800 dark:text-slate-100">{stem.name}</span>
-                    
-                    {/* Equalizador animado */}
-                    <div className="h-6 flex items-end justify-center gap-0.5 my-1.5">
-                      {isStemActive && status === 'processing' ? (
-                        <>
-                          <span className="w-1 bg-[var(--color-brand-medium)] rounded-full eq-bar-1"></span>
-                          <span className="w-1 bg-[var(--color-brand-medium)] rounded-full eq-bar-2"></span>
-                          <span className="w-1 bg-[var(--color-brand-medium)] rounded-full eq-bar-3"></span>
-                          <span className="w-1 bg-[var(--color-brand-medium)] rounded-full eq-bar-4"></span>
-                        </>
-                      ) : isStemDone ? (
-                        <span className="text-emerald-500 dark:text-emerald-400 font-bold text-xs flex items-center gap-1">
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          Pronta
+                    <div 
+                      className={`p-3 rounded-2xl border flex flex-col items-center text-center studio-card-transition relative overflow-hidden ${
+                        isStemDone
+                          ? 'bg-white dark:bg-slate-800/95 border-emerald-300 dark:border-emerald-800/80 shadow-sm'
+                          : isStemActive
+                          ? 'bg-blue-50/60 dark:bg-slate-800/90 border-blue-300 dark:border-blue-800/80 shadow-sm'
+                          : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/70 opacity-75'
+                      }`}
+                    >
+                      {/* LED de Canal Superior */}
+                      <div className="w-full flex items-center justify-between mb-1">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            isStemDone
+                              ? 'bg-emerald-400 shadow-[0_0_6px_#10b981]'
+                              : isStemActive
+                              ? stem.ledColor
+                              : 'bg-slate-300 dark:bg-slate-700'
+                          }`}
+                        />
+                        <span className="text-[9px] font-mono font-bold text-slate-400 tabular-nums">
+                          {isFocusedInstrument ? 'FOCUS' : 'CH'}
                         </span>
-                      ) : (
-                        <span className="w-12 h-1 bg-gray-200 dark:bg-slate-700 rounded-full"></span>
-                      )}
-                    </div>
+                      </div>
 
-                    <span className="text-[10px] text-gray-500 dark:text-slate-400 font-medium">
-                      {isStemDone ? 'WAV 44.1kHz' : isStemActive ? 'Isolando...' : 'Pendente'}
-                    </span>
-                  </div>
+                      {/* Render 3D do Instrumento/Equipamento */}
+                      <div className="w-12 h-12 flex items-center justify-center my-0.5">
+                        <img
+                          src={stem.img3d}
+                          alt={stem.name}
+                          className="w-11 h-11 object-contain drop-shadow-md"
+                        />
+                      </div>
+
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-100 leading-tight mt-1">
+                        {stem.name}
+                      </span>
+                      <span className="text-[9px] font-mono font-semibold text-slate-400 dark:text-slate-500 mt-0.5 tabular-nums">
+                        {stem.freq}
+                      </span>
+                      
+                      {/* Equalizador animado */}
+                      <div className="h-6 flex items-end justify-center gap-1 my-1.5">
+                        {isStemActive && status === 'processing' ? (
+                          <>
+                            <span className={`w-1 ${stem.barColor} rounded-full eq-bar-1`}></span>
+                            <span className={`w-1 ${stem.barColor} rounded-full eq-bar-2`}></span>
+                            <span className={`w-1 ${stem.barColor} rounded-full eq-bar-3`}></span>
+                            <span className={`w-1 ${stem.barColor} rounded-full eq-bar-4`}></span>
+                          </>
+                        ) : isStemDone ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-[11px] flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Pronta
+                          </span>
+                        ) : (
+                          <span className="w-12 h-1 bg-slate-200 dark:bg-slate-700 rounded-full"></span>
+                        )}
+                      </div>
+
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-bold tabular-nums">
+                        {isStemDone ? 'WAV 44.1kHz' : isStemActive ? 'Isolando...' : 'Pendente'}
+                      </span>
+                    </div>
+                  </StudioTiltCard>
                 );
               })}
             </div>
@@ -447,20 +617,20 @@ const AudioProcessingScreen = ({
 
           {/* CARD DE DICAS MUSICAIS (CARROSSEL DINÂMICO) */}
           {status === 'processing' && (
-            <div className="bg-gradient-to-r from-blue-50 via-indigo-50/50 to-blue-50 dark:from-slate-800/90 dark:via-slate-800/60 dark:to-slate-800/90 rounded-xl p-4 border border-blue-200/80 dark:border-blue-900/60 flex items-start gap-3.5 transition-all">
-              <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-xs border border-blue-200 dark:border-slate-700 flex items-center justify-center text-lg shrink-0">
+            <div className="bg-gradient-to-r from-blue-50 via-indigo-50/50 to-blue-50 dark:from-slate-800/90 dark:via-slate-800/60 dark:to-slate-800/90 rounded-2xl p-4 border border-blue-200/80 dark:border-blue-900/60 flex items-start gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-2xs border border-blue-200 dark:border-slate-700 flex items-center justify-center text-lg shrink-0">
                 💡
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-medium)] dark:text-blue-400">
+                <div className="flex items-center gap-2 mb-0.5 tabular-nums">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--color-brand-medium)] dark:text-blue-400">
                     {MUSICIAN_TIPS[currentTipIndex].title}
                   </span>
-                  <span className="text-[10px] text-gray-400 dark:text-slate-500">
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
                     ({currentTipIndex + 1} de {MUSICIAN_TIPS.length})
                   </span>
                 </div>
-                <p className="text-xs md:text-sm text-gray-700 dark:text-slate-300 leading-relaxed font-medium transition-opacity duration-300">
+                <p className="text-xs md:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-pretty">
                   {MUSICIAN_TIPS[currentTipIndex].text}
                 </p>
               </div>
@@ -469,14 +639,14 @@ const AudioProcessingScreen = ({
 
           {/* ÁREA DE SUCESSO / AÇÕES FINAIS */}
           {status === 'success' && (
-            <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-emerald-50/50 dark:bg-emerald-950/30 p-5 rounded-xl border border-emerald-200 dark:border-emerald-800/70">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-emerald-50/60 dark:bg-emerald-950/30 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-800/70">
               <div className="flex items-center gap-3 text-emerald-800 dark:text-emerald-200">
-                <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
                   ✓
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm md:text-base">Música pronta para uso!</h4>
-                  <p className="text-xs text-emerald-700 dark:text-emerald-300">Todas as 6 faixas foram geradas e salvas com sucesso.</p>
+                  <h4 className="font-black text-sm md:text-base">Música pronta para a Mesa de Mixagem!</h4>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300">Todas as 6 faixas foram geradas em alta pureza e salvas na sua biblioteca.</p>
                 </div>
               </div>
 
@@ -484,17 +654,17 @@ const AudioProcessingScreen = ({
                 <button
                   type="button"
                   onClick={onGoToDashboard}
-                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-300 dark:border-slate-700 transition shadow-sm text-sm"
+                  className="flex-1 sm:flex-initial min-h-[42px] px-5 py-2.5 rounded-xl font-extrabold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 studio-btn-transition active:scale-95 shadow-2xs text-sm cursor-pointer"
                 >
                   Ir para Biblioteca
                 </button>
                 <button
                   type="button"
                   onClick={onOpenMixer}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-white bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] transition shadow-md text-sm"
+                  className="flex-1 sm:flex-initial min-h-[42px] flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-white bg-gradient-to-r from-[var(--color-brand-medium)] to-[var(--color-brand-dark)] hover:from-blue-600 hover:to-blue-800 studio-btn-transition active:scale-95 shadow-md text-sm cursor-pointer"
                 >
                   <img src="/assets/icons/icon_mixer_white.png" alt="Mixer" className="w-4 h-4 object-contain" />
-                  Abrir no Mixer
+                  <span>Abrir no Mixer</span>
                 </button>
               </div>
             </div>
@@ -502,14 +672,14 @@ const AudioProcessingScreen = ({
 
           {/* ÁREA DE ERRO / RETENTATIVA */}
           {status === 'error' && (
-            <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-50/60 dark:bg-rose-950/30 p-5 rounded-xl border border-rose-200 dark:border-rose-800/70">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-50/60 dark:bg-rose-950/30 p-5 rounded-2xl border border-rose-200 dark:border-rose-800/70">
               <div className="flex items-center gap-3 text-rose-800 dark:text-rose-200">
-                <div className="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
                   ✕
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm md:text-base">Não foi possível concluir</h4>
-                  <p className="text-xs text-rose-700 dark:text-rose-300 max-w-md">
+                  <h4 className="font-black text-sm md:text-base">Não foi possível concluir</h4>
+                  <p className="text-xs text-rose-700 dark:text-emerald-300 max-w-md">
                     {errorMessage || "Verifique sua conexão, o link fornecido ou se o servidor Python está ativo."}
                   </p>
                 </div>
@@ -519,14 +689,14 @@ const AudioProcessingScreen = ({
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-300 dark:border-slate-700 transition shadow-sm text-sm"
+                  className="flex-1 sm:flex-initial min-h-[42px] px-5 py-2.5 rounded-xl font-extrabold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 studio-btn-transition active:scale-95 shadow-2xs text-sm cursor-pointer"
                 >
                   Voltar e Editar
                 </button>
                 <button
                   type="button"
                   onClick={onRetry}
-                  className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl font-bold text-white bg-rose-600 hover:bg-rose-700 transition shadow-md text-sm"
+                  className="flex-1 sm:flex-initial min-h-[42px] px-6 py-2.5 rounded-xl font-extrabold text-white bg-rose-600 hover:bg-rose-700 studio-btn-transition active:scale-95 shadow-md text-sm cursor-pointer"
                 >
                   Tentar Novamente
                 </button>

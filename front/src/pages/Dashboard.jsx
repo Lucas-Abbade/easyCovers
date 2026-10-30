@@ -284,9 +284,6 @@ const Dashboard = ({ email, user, songs = [], onDeleteSong, onLogout }) => {
                   />
                   Sala de Controle • Painel do Músico
                 </span>
-                <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500">
-                  Demucs v4 HT-6s
-                </span>
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-black text-[var(--color-brand-deep)] tracking-tight text-balance">
