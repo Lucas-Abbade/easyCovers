@@ -191,3 +191,112 @@ export function useAnimatedCounter(targetValue, active = true) {
   return animatedValue;
 }
 
+/**
+ * Injeta a variável CSS `--scroll-y` diretamente no elemento alvo (ou documentElement)
+ * via `requestAnimationFrame` + `{ passive: true }`.
+ * Garante Parallax a 60fps na GPU sem causar re-renderizações na árvore React.
+ */
+export function useScrollVariable(containerRef) {
+  const prefersReduced = useReducedMotion();
+  const isVisible = useDocumentVisibility();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const targetEl = containerRef?.current || document.documentElement;
+
+    if (prefersReduced || !isVisible) {
+      targetEl.style.setProperty('--scroll-y', '0');
+      return undefined;
+    }
+
+    let rafId = null;
+    let lastScrollY = -1;
+
+    const updateScrollVar = () => {
+      rafId = null;
+      const currentY = window.scrollY || window.pageYOffset || 0;
+      if (Math.abs(currentY - lastScrollY) >= 0.5) {
+        lastScrollY = currentY;
+        targetEl.style.setProperty('--scroll-y', currentY.toFixed(1));
+      }
+    };
+
+    const handleScroll = () => {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(updateScrollVar);
+      }
+    };
+
+    updateScrollVar();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [containerRef, prefersReduced, isVisible]);
+}
+
+/**
+ * Calcula o progresso normalizado [0..1] da travessia de uma seção na viewport (Scroll-Scrubbing).
+ * Em modo `prefers-reduced-motion`, retorna 1 para exibir o estado final completo sem movimento.
+ */
+export function useSectionScrollProgress(sectionRef) {
+  const prefersReduced = useReducedMotion();
+  const isVisible = useDocumentVisibility();
+  const [progress, setProgress] = useState(() => (prefersReduced ? 1 : 0));
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || prefersReduced || !isVisible) {
+      return undefined;
+    }
+
+    let rafId = null;
+
+    const measure = () => {
+      rafId = null;
+      const el = sectionRef?.current;
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+
+      // Inicia a desconstrução quando o topo do elemento atinge 88% da altura da tela
+      // e completa (1.0) quando o topo chega a 22% da altura da tela.
+      const startY = vh * 0.88;
+      const endY = vh * 0.22;
+      const raw = (startY - rect.top) / Math.max(1, startY - endY);
+      const clamped = Math.min(1, Math.max(0, raw));
+
+      setProgress((prev) =>
+        Math.abs(clamped - prev) >= 0.005 ? Number(clamped.toFixed(3)) : prev
+      );
+    };
+
+    const onScrollOrResize = () => {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(measure);
+      }
+    };
+
+    measure();
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('resize', onScrollOrResize);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [sectionRef, prefersReduced, isVisible]);
+
+  return prefersReduced ? 1 : progress;
+}
+
+

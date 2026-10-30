@@ -21,10 +21,14 @@ import {
 } from '../components/Icons';
 import ThemeToggle from '../components/ThemeToggle';
 import LandingInteractiveMixer from '../components/LandingInteractiveMixer';
+import StudioParallaxBackground from '../components/StudioParallaxBackground';
+import ScrollWaveDeconstructor from '../components/ScrollWaveDeconstructor';
+import ElasticGuitarString from '../components/ElasticGuitarString';
 import {
   useReducedMotion,
   useInViewOnce,
   useAnimatedCounter,
+  useScrollVariable,
 } from '../utils/motionTokens';
 
 // Dados estáticos de fallback caso o backend ainda esteja iniciando
@@ -278,8 +282,11 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
   const [demoPitchSemitones, setDemoPitchSemitones] = useState(0);
   const [demoPlaybackSpeed, setDemoPlaybackSpeed] = useState(0.75);
   const [activePersona, setActivePersona] = useState('guitar');
+  const [isMixerPlaying, setIsMixerPlaying] = useState(false);
 
-  // Scroll-reveal hooks (once: true — Regra 7 de motion-patterns)
+  // Scroll-reveal hooks (once: true — Regra 7 de motion-patterns) + Motor Parallax GPU
+  const landingRootRef = useRef(null);
+  useScrollVariable(landingRootRef);
   const prefersReducedMotion = useReducedMotion();
   const [statsRef, statsInView] = useInViewOnce(0.15);
   const [bentoRef, bentoInView] = useInViewOnce(0.1);
@@ -954,21 +961,15 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
     [activePersona]
   );
 
+  const isAnyAudioActive = isMixerPlaying || Boolean(playingPreviewId);
+
   return (
-    <div className="font-sans min-h-screen bg-[#EEF6FF] dark:bg-[#060B18] text-slate-900 dark:text-slate-100 selection:bg-[var(--color-brand-medium)] selection:text-white relative overflow-x-hidden">
-      {/* Superfície de Grid Técnico Acústico + Iluminação Radial */}
-      <div
-        className="fixed inset-0 studio-grid-surface pointer-events-none"
-        aria-hidden="true"
-      />
-      <div
-        className="fixed -top-48 left-1/4 w-[38rem] h-[38rem] bg-blue-500/15 dark:bg-blue-600/12 rounded-full blur-3xl pointer-events-none"
-        aria-hidden="true"
-      />
-      <div
-        className="fixed top-1/3 -right-48 w-[34rem] h-[34rem] bg-purple-500/10 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"
-        aria-hidden="true"
-      />
+    <div
+      ref={landingRootRef}
+      className="font-sans min-h-screen bg-[#EEF6FF] dark:bg-[#060B18] text-slate-900 dark:text-slate-100 selection:bg-[var(--color-brand-medium)] selection:text-white relative overflow-x-hidden"
+    >
+      {/* Background Parallax com Instrumentos Musicais, Cifras, Frequências (Hz/dB) e Ambient Glow */}
+      <StudioParallaxBackground isAudioPlaying={isAnyAudioActive} />
 
       {/* ========================================================================= */}
       {/* 1. CABEÇALHO GLOBAL FIXO (STICKY GLASS NAVBAR)                            */}
@@ -1190,7 +1191,10 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
 
               {/* Coluna Direita: Sandbox Interativo de Stems em Tempo Real (7 colunas no desktop) */}
               <div className="lg:col-span-7">
-                <LandingInteractiveMixer onOpenStudio={() => openAuthModal(true)} />
+                <LandingInteractiveMixer
+                  onOpenStudio={() => openAuthModal(true)}
+                  onPlayStateChange={setIsMixerPlaying}
+                />
               </div>
             </div>
           </section>
@@ -1256,6 +1260,14 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
             </div>
           </section>
 
+          {/* Divisória Interativa: Corda 6 (E2 • 82.4 Hz) */}
+          <ElasticGuitarString
+            stringName="E2"
+            frequency="82.4 Hz"
+            gauge=".046w"
+            accentColor="#3b82f6"
+          />
+
           {/* ------------------------------------------------------------------- */}
           {/* SEÇÃO 3: BENTO GRID ASSIMÉTRICO DE ENGENHARIA MUSICAL               */}
           {/* ------------------------------------------------------------------- */}
@@ -1281,6 +1293,12 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
                 de ensaio, transcrição de ouvido e criação de backing tracks.
               </p>
             </div>
+
+            {/* Efeito Scroll-Scrub: Desconstrução de Onda Master em 6 Faixas */}
+            <ScrollWaveDeconstructor
+              selectedStem={selectedStemInfo}
+              onSelectStem={setSelectedStemInfo}
+            />
 
             <div
               className={`grid grid-cols-1 lg:grid-cols-12 gap-6 studio-card-transition ${
@@ -1550,6 +1568,14 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
             </div>
           </section>
 
+          {/* Divisória Interativa: Corda 5 (A2 • 110.0 Hz) */}
+          <ElasticGuitarString
+            stringName="A2"
+            frequency="110.0 Hz"
+            gauge=".036w"
+            accentColor="#10b981"
+          />
+
           {/* ------------------------------------------------------------------- */}
           {/* SEÇÃO 4: EXPLORADOR DE CATÁLOGO AO VIVO ( PREVIEWS DE 30S )          */}
           {/* ------------------------------------------------------------------- */}
@@ -1758,6 +1784,14 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
             )}
           </section>
 
+          {/* Divisória Interativa: Corda 4 (D3 • 146.8 Hz) */}
+          <ElasticGuitarString
+            stringName="D3"
+            frequency="146.8 Hz"
+            gauge=".026w"
+            accentColor="#a855f7"
+          />
+
           {/* ------------------------------------------------------------------- */}
           {/* SEÇÃO 4.5: PIPELINE EM 3 ETAPAS (UPLOAD -> DEMUCS IA -> DAW MIXER)   */}
           {/* ------------------------------------------------------------------- */}
@@ -1833,6 +1867,14 @@ const Login = ({ onLogin, initialShowAuth = false }) => {
               ))}
             </div>
           </section>
+
+          {/* Divisória Interativa: Corda 3 (G3 • 196.0 Hz) */}
+          <ElasticGuitarString
+            stringName="G3"
+            frequency="196.0 Hz"
+            gauge=".017p"
+            accentColor="#f59e0b"
+          />
 
           {/* ------------------------------------------------------------------- */}
           {/* SEÇÃO 5: SELETOR POR INSTRUMENTO (PERSONAS) & FLUXO EM 3 ETAPAS      */}

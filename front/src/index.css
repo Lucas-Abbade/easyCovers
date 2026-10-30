@@ -334,6 +334,98 @@ html {
   animation-play-state: paused !important;
 }
 
+/* Camadas de Parallax Acústico aceleradas por GPU via CSS Variable --scroll-y */
+.studio-parallax-layer {
+  will-change: transform;
+  transform: translate3d(0, calc(var(--scroll-y, 0) * var(--parallax-speed, -0.12) * 1px), 0);
+}
+
+/* Transição suave para o Ambient Glow do modo "Foco no Console" */
+.studio-ambient-glow {
+  transition-property: opacity, transform;
+  transition-duration: 900ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ========================================================================= */
+/* DASHBOARD 3D STUDIO HARDWARE & PERSPECTIVE TILT ENGINE                    */
+/* ========================================================================= */
+
+.studio-tilt-card {
+  transform: perspective(1100px) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg)) scale3d(var(--tilt-scale, 1), var(--tilt-scale, 1), 1);
+  transform-style: preserve-3d;
+  transition-property: transform, border-color, background-color, box-shadow;
+  transition-duration: 240ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.studio-tilt-glare {
+  background: radial-gradient(
+    360px circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(59, 130, 246, 0.14),
+    rgba(168, 85, 247, 0.06) 42%,
+    transparent 75%
+  );
+  opacity: var(--glare-opacity, 0);
+  transition-property: opacity;
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark .studio-tilt-glare {
+  background: radial-gradient(
+    380px circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(59, 130, 246, 0.22),
+    rgba(245, 158, 11, 0.08) 45%,
+    transparent 75%
+  );
+}
+
+/* Filamento incandescente de válvula 12AX7 / EL34 */
+@keyframes tubeFilamentGlow {
+  0%, 100% {
+    opacity: 0.82;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+.animate-tube-glow {
+  animation: tubeFilamentGlow 2.4s ease-in-out infinite;
+}
+
+/* Pulsação acústica dos cones dos Monitores de Referência */
+@keyframes monitorConeBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.08);
+  }
+  45% {
+    transform: scale(0.97);
+  }
+  70% {
+    transform: scale(1.04);
+  }
+}
+
+.animate-monitor-cone {
+  animation: monitorConeBeat 1.15s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Balística de agulha de VU Meter Analógico */
+.vu-needle-ballistics {
+  transform-origin: 50% 88%;
+  transition-property: transform;
+  transition-duration: 240ms;
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Respeito estrito a prefers-reduced-motion (Regra 3 de motion-foundations) */
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -346,12 +438,22 @@ html {
   .animate-pulse-glow,
   .animate-spotify-float,
   .animate-spotify-pulse,
-  .animate-shimmer {
+  .animate-shimmer,
+  .animate-tube-glow,
+  .animate-monitor-cone,
+  .studio-parallax-layer,
+  .studio-tilt-card {
     animation: none !important;
     transform: none !important;
+    will-change: auto !important;
+  }
+  .studio-tilt-glare {
+    opacity: 0 !important;
   }
   .studio-btn-transition,
-  .studio-card-transition {
+  .studio-card-transition,
+  .studio-ambient-glow,
+  .vu-needle-ballistics {
     transition-property: opacity, background-color, border-color, color;
     transition-duration: 120ms;
   }

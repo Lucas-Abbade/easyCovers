@@ -97,7 +97,7 @@ const formatTimecode = (seconds) => {
   return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}.${tenths}`;
 };
 
-const LandingInteractiveMixer = ({ onOpenStudio }) => {
+const LandingInteractiveMixer = ({ onOpenStudio, onPlayStateChange }) => {
   const prefersReducedMotion = useReducedMotion();
   const isTabVisible = useDocumentVisibility();
 
@@ -226,6 +226,14 @@ const LandingInteractiveMixer = ({ onOpenStudio }) => {
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
+
+  // Notifica a Landing Page sobre o estado de reprodução para o Ambient Glow ("Modo Foco no Console")
+  useEffect(() => {
+    onPlayStateChange?.(isPlaying);
+    return () => {
+      onPlayStateChange?.(false);
+    };
+  }, [isPlaying, onPlayStateChange]);
 
   // Fallback de relógio visual suave caso o áudio esteja tocando
   useEffect(() => {
