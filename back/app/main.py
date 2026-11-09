@@ -4,6 +4,27 @@ from dotenv import load_dotenv
 # Carrega variáveis de ambiente do arquivo .env
 load_dotenv()
 
+# Suprime pop-ups modais de erro do Windows (ex: "python.exe - Imagem Incorreta" 0xc0e90002)
+if os.name == "nt":
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetErrorMode(0x0001 | 0x0002 | 0x8000)
+    except Exception:
+        pass
+
+# Contorna bloqueios de segurança do Windows (Smart App Control / WinError 4551) no torchaudio
+try:
+    import torchaudio._extension.utils as _ta_utils
+    _orig_load_lib = _ta_utils._load_lib
+    def _safe_load_lib(lib):
+        try:
+            return _orig_load_lib(lib)
+        except OSError:
+            pass
+    _ta_utils._load_lib = _safe_load_lib
+except Exception:
+    pass
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles

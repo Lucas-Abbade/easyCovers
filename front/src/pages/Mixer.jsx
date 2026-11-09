@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import * as Tone from 'tone';
 import PlayPauseButton from '../components/PlayPauseButton';
 import ThemeToggle from '../components/ThemeToggle';
 import DashboardStudioBackground from '../components/DashboardStudioBackground';
 import MixerMasterRack from '../components/MixerMasterRack';
 import StudioChannelStrip from '../components/StudioChannelStrip';
+import { StudioAudioEngine } from '../utils/studioAudioEngine';
 import {
   MixerFadersIcon,
   WaveformIcon,
@@ -134,36 +134,6 @@ const parseLrc = (lrcString) => {
   return result.sort((a, b) => a.time - b.time);
 };
 
-// Converte dB do Tone.Meter (-48 dB .. 0 dB) em escala [0..100]
-const normalizeMeterDb = (rawValue) => {
-  const db = Array.isArray(rawValue) ? Math.max(...rawValue) : Number(rawValue);
-  if (!Number.isFinite(db) || db <= -48) return 0;
-  return Math.min(100, Math.max(0, Math.round(((db + 48) / 48) * 100)));
-};
-
-// Funções utilitárias de transporte do Tone.js (evita mutação direta de import no React Compiler)
-const setToneTransportSeconds = (seconds) => {
-  Tone.Transport.seconds = seconds;
-};
-
-const configureToneTransportLoop = (enabled, startSec, endSec) => {
-  if (typeof startSec === 'number') Tone.Transport.loopStart = startSec;
-  if (typeof endSec === 'number') Tone.Transport.loopEnd = endSec;
-  Tone.Transport.loop = Boolean(enabled);
-};
-
-const resetToneTransport = () => {
-  Tone.Transport.stop();
-  Tone.Transport.loop = false;
-  Tone.Transport.seconds = 0;
-};
-
-const setToneDestinationDb = (dbValue) => {
-  if (Tone.Destination) {
-    Tone.Destination.volume.value = dbValue;
-  }
-};
-
 const loadInitialPracticeMarkers = (songObj) => {
   if (!songObj?.id) return [];
   const storageKey = `easycovers_markers_${songObj.id}`;
@@ -289,10 +259,8 @@ const Mixer = () => {
   const [isSavingMarker, setIsSavingMarker] = useState(false);
   const [newMarkerName, setNewMarkerName] = useState('');
 
-  // Referências de Áudio e Medidores em Tempo Real (Ideia 1)
-  const players = useRef(null);
-  const pitchShift = useRef(null);
-  const meters = useRef({});
+  // Referência da Engine de Áudio Studio-Grade (WSOLA Phase-Locked + Bit-Exact Bypass)
+  const audioEngineRef = useRef(null);
   const progressInterval = useRef(null);
   const lastProgressStateUpdateRef = useRef(0);
 
@@ -304,6 +272,7 @@ const Mixer = () => {
     masterVolume,
     isMasterMuted,
     playbackSpeed,
+    currentPitch,
     initialMarker,
   });
 
@@ -315,9 +284,10 @@ const Mixer = () => {
       masterVolume,
       isMasterMuted,
       playbackSpeed,
+      currentPitch,
       initialMarker,
     };
-  }, [volumes, mutes, solos, masterVolume, isMasterMuted, playbackSpeed, initialMarker]);
+  }, [volumes, mutes, solos, masterVolume, isMasterMuted, playbackSpeed, currentPitch, initialMarker]);
 
   const hasAnySolo = useMemo(() => Object.values(solos).some(Boolean), [solos]);
 
@@ -429,7 +399,7 @@ const Mixer = () => {
   const handleLyricSeek = (time) => {
     if (!isLoaded || duration <= 0) return;
     const target = Math.max(0, Math.min(duration, time));
-    setToneTransportSeconds(target);
+    audioEngineRef.current?.seek(target);
     setProgress(target);
   };
 
@@ -443,17 +413,7 @@ const Mixer = () => {
 
   // Aplicação da matriz de Mute / Solo de estúdio
   const applyAudioRouting = useCallback((activeMutes, activeSolos) => {
-    if (!players.current) return;
-    const anySolo = Object.values(activeSolos).some(Boolean);
-
-    STEM_KEYS.forEach((track) => {
-      if (players.current.has(track)) {
-        const shouldMute = anySolo
-          ? !activeSolos[track] || activeMutes[track]
-          : activeMutes[track];
-        players.current.player(track).mute = shouldMute;
-      }
-    });
+    audioEngineRef.current?.setRouting(activeMutes, activeSolos);
   }, []);
 
   // Reseta todas as variáveis CSS de nível quando pausado
@@ -469,7 +429,7 @@ const Mixer = () => {
     rootEl.style.setProperty('--vu-angle-r', '-36deg');
   }, []);
 
-  // Inicialização do Tone.js, dos 6 players de áudio e dos 6 Tone.Meter (Ideia 1)
+  // Inicialização da StudioAudioEngine (6 Stems Sincronizados + WSOLA Phase-Locked + Bit-Exact Bypass)
   useEffect(() => {
     if (!song) {
       navigate('/dashboard');
@@ -485,88 +445,86 @@ const Mixer = () => {
     const pastaID = caminhoDaPasta.split(/[\\/]/).pop();
     const baseUrl = `http://localhost:8000/stems/${pastaID}/`;
 
-    // Cadeia de efeitos: Players -> PitchShift -> Destination
-    pitchShift.current = new Tone.PitchShift(0).toDestination();
+    const engine = new StudioAudioEngine();
+    audioEngineRef.current = engine;
 
-    players.current = new Tone.Players({
-      vocals: baseUrl + 'vocals.wav',
-      drums: baseUrl + 'drums.wav',
-      bass: baseUrl + 'bass.wav',
-      other: baseUrl + 'other.wav',
-      guitar: baseUrl + 'guitar.wav',
-      piano: baseUrl + 'piano.wav',
-    }).connect(pitchShift.current);
+    engine
+      .loadStems(baseUrl)
+      .then((loadedDuration) => {
+        if (engine.disposed) return;
 
-    // Instancia um Tone.Meter({ smoothing: 0.78 }) para cada stem
-    const createdMeters = {};
-    STEM_KEYS.forEach((track) => {
-      if (players.current.has(track)) {
-        const meter = new Tone.Meter({ smoothing: 0.78 });
-        players.current.player(track).connect(meter);
-        createdMeters[track] = meter;
-      }
-    });
-    meters.current = createdMeters;
-
-    Tone.loaded()
-      .then(() => {
-        setIsLoaded(true);
-        setToneDestinationDb(0);
-
-        if (players.current.has('vocals')) {
-          setDuration(players.current.player('vocals').buffer.duration);
-        }
+        const {
+          volumes: initVols,
+          mutes: initMutes,
+          solos: initSolos,
+          masterVolume: initMasterVol,
+          isMasterMuted: initMasterMuted,
+          playbackSpeed: initSpeed,
+          currentPitch: initPitch,
+          initialMarker: initMarker,
+        } = audioStateRef.current;
 
         STEM_KEYS.forEach((track) => {
-          if (players.current.has(track)) {
-            const player = players.current.player(track);
-            player.volume.value = 20 * Math.log10((80 / 100) * 0.5);
-            player.playbackRate = audioStateRef.current.playbackSpeed || 1.0;
-            player.sync().start(0);
-          }
+          engine.setStemVolume(track, initVols[track]);
         });
+        engine.setRouting(initMutes, initSolos);
+        engine.setMasterVolume(initMasterVol, initMasterMuted);
+        engine.setSpeed(initSpeed || 1.0);
+        engine.setPitch(initPitch || 0);
 
-        // Aplica marcador inicial vindo do Dashboard se houver
-        const initMarker = audioStateRef.current.initialMarker;
         if (
           typeof initMarker?.start === 'number' &&
           typeof initMarker?.end === 'number'
         ) {
-          configureToneTransportLoop(true, initMarker.start, initMarker.end);
-          setToneTransportSeconds(initMarker.start);
+          engine.setLoop(true, initMarker.start, initMarker.end);
+          engine.seek(initMarker.start);
         }
+
+        setDuration(loadedDuration);
+        setIsLoaded(true);
       })
       .catch((err) => {
-        console.error('Falha ao carregar stems no Tone.js:', err);
+        console.error('Falha ao carregar stems na StudioAudioEngine:', err);
       });
 
     return () => {
       cancelAnimationFrame(progressInterval.current);
       countInTimersRef.current.forEach((t) => clearTimeout(t));
-      resetToneTransport();
-      Object.values(meters.current || {}).forEach((m) => {
-        try {
-          m?.dispose();
-        } catch {
-          // Ignora erro de dispose
-        }
-      });
-      meters.current = {};
-      players.current?.dispose();
-      pitchShift.current?.dispose();
+      engine.dispose();
+      if (audioEngineRef.current === engine) {
+        audioEngineRef.current = null;
+      }
     };
   }, [song, navigate]);
 
   // Loop de 60fps via requestAnimationFrame: atualiza --level-{track} no DOM (Zero Re-render) e progresso
   useEffect(() => {
-    if (!isPlaying || !isTabVisible) {
+    if (!isPlaying) {
       resetMeterCssVariables();
       return undefined;
     }
 
+    if (!isTabVisible) {
+      resetMeterCssVariables();
+      const bgTimer = setInterval(() => {
+        const engine = audioEngineRef.current;
+        if (engine && engine.clock.isPlaying) {
+          const currentSec = engine.getCurrentSongTime();
+          setProgress(currentSec);
+          if (!isLooping && duration > 0 && currentSec >= duration) {
+            engine.stop();
+            setProgress(0);
+            setIsPlaying(false);
+          }
+        }
+      }, 100);
+      return () => clearInterval(bgTimer);
+    }
+
     const updateAudioTelemetry = (now) => {
-      if (Tone.Transport.state === 'started') {
-        const currentSec = Tone.Transport.seconds;
+      const engine = audioEngineRef.current;
+      if (engine && engine.clock.isPlaying) {
+        const currentSec = engine.getCurrentSongTime();
 
         // Atualiza o state React de progress a ~20fps (suficiente para MM:SS.d) evitando 60 re-renders/s
         if (now - lastProgressStateUpdateRef.current >= 48) {
@@ -574,17 +532,15 @@ const Mixer = () => {
           setProgress(currentSec);
         }
 
-        // Atualiza variáveis CSS dos medidores a 60fps direto na GPU
+        // Atualiza variáveis CSS dos medidores a 60fps direto na GPU a partir dos AnalyserNodes reais
         const rootEl = mixerRootRef.current;
         if (rootEl) {
+          const { stemLevels, masterL: rawMasterL, masterR: rawMasterR } =
+            engine.getTelemetryLevels();
           const {
-            volumes: curVols,
-            mutes: curMutes,
-            solos: curSolos,
             masterVolume: curMasterVol,
             isMasterMuted: curMasterMuted,
           } = audioStateRef.current;
-          const anySolo = Object.values(curSolos).some(Boolean);
           const masterFactor = curMasterMuted ? 0 : curMasterVol / 100;
 
           let sumLeft = 0;
@@ -592,26 +548,10 @@ const Mixer = () => {
           let maxStemLevel = 0;
 
           STEM_KEYS.forEach((track, idx) => {
-            const effectivelyMuted = anySolo
-              ? !curSolos[track] || curMutes[track]
-              : curMutes[track];
-            const meter = meters.current?.[track];
-            let level = 0;
-
-            if (!effectivelyMuted && curVols[track] > 0 && !curMasterMuted && meter) {
-              const rawDb = meter.getValue();
-              level = normalizeMeterDb(rawDb);
-              // Fallback dinâmico suave caso o buffer ainda esteja estabilizando
-              if (level === 0 && curVols[track] > 0) {
-                const wave = Math.abs(Math.sin(currentSec * (3.2 + idx * 0.7) + idx));
-                level = Math.round((curVols[track] * 0.65) * (0.45 + wave * 0.45));
-              }
-            }
-
+            const level = stemLevels[track] || 0;
             rootEl.style.setProperty(`--level-${track}`, String(level));
             if (level > maxStemLevel) maxStemLevel = level;
 
-            // Panorâmica sutil L/R para alimentar o Duplo VU Meter do Master Bus
             if (idx % 2 === 0) {
               sumLeft += level * 0.42;
               sumRight += level * 0.34;
@@ -623,11 +563,15 @@ const Mixer = () => {
 
           const masterL = Math.min(
             100,
-            Math.round(Math.max(maxStemLevel * 0.78, sumLeft * 0.5) * masterFactor)
+            Math.round(
+              Math.max(rawMasterL, maxStemLevel * 0.78, sumLeft * 0.5) * masterFactor
+            )
           );
           const masterR = Math.min(
             100,
-            Math.round(Math.max(maxStemLevel * 0.74, sumRight * 0.5) * masterFactor)
+            Math.round(
+              Math.max(rawMasterR, maxStemLevel * 0.74, sumRight * 0.5) * masterFactor
+            )
           );
 
           // Mapeia [0..100] -> [-36deg..+32deg] para as agulhas balísticas do VU Meter
@@ -641,8 +585,7 @@ const Mixer = () => {
         }
 
         if (!isLooping && duration > 0 && currentSec >= duration) {
-          Tone.Transport.stop();
-          setToneTransportSeconds(0);
+          engine.stop();
           setProgress(0);
           setIsPlaying(false);
           resetMeterCssVariables();
@@ -659,9 +602,7 @@ const Mixer = () => {
   // Síntese de clique para contagem de entrada (Metrônomo Pre-Roll de 4 tempos)
   const playClickSound = useCallback((freq = 800) => {
     try {
-      const ctx =
-        Tone.context?.rawContext ||
-        (Tone.getContext && Tone.getContext()?.rawContext);
+      const ctx = audioEngineRef.current?.rawContext;
       if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -711,24 +652,32 @@ const Mixer = () => {
 
   // Alternar Play / Pause com suporte a Count-in
   const togglePlay = async () => {
-    if (Tone.context.state !== 'running') {
-      await Tone.start();
-    }
+    if (!audioEngineRef.current || !isLoaded) return;
 
     if (isPlaying || isCountingIn) {
       countInTimersRef.current.forEach((t) => clearTimeout(t));
       setCountInNumber(null);
       setIsCountingIn(false);
-      Tone.Transport.pause();
+      audioEngineRef.current.pause();
       setIsPlaying(false);
-    } else {
-      if (isCountInEnabled) {
-        runCountIn(() => {
-          Tone.Transport.start();
+      return;
+    }
+
+    const rawCtx = audioEngineRef.current.rawContext;
+    if (rawCtx && rawCtx.state !== 'running' && typeof rawCtx.resume === 'function') {
+      await rawCtx.resume();
+    }
+
+    if (isCountInEnabled) {
+      runCountIn(async () => {
+        await audioEngineRef.current?.play();
+        if (audioEngineRef.current?.clock.isPlaying) {
           setIsPlaying(true);
-        });
-      } else {
-        Tone.Transport.start();
+        }
+      });
+    } else {
+      await audioEngineRef.current.play();
+      if (audioEngineRef.current?.clock.isPlaying) {
         setIsPlaying(true);
       }
     }
@@ -736,18 +685,16 @@ const Mixer = () => {
 
   // Salto de tempo (+ ou - segundos)
   const handleSeekDelta = (deltaSeconds) => {
-    if (!isLoaded || duration <= 0) return;
-    const target = Math.max(
-      0,
-      Math.min(duration, Tone.Transport.seconds + deltaSeconds)
-    );
-    setToneTransportSeconds(target);
+    if (!isLoaded || duration <= 0 || !audioEngineRef.current) return;
+    const currentPos = audioEngineRef.current.getCurrentSongTime();
+    const target = Math.max(0, Math.min(duration, currentPos + deltaSeconds));
+    audioEngineRef.current.seek(target);
     setProgress(target);
   };
 
   // Reiniciar faixa do início
   const handleRestart = () => {
-    setToneTransportSeconds(0);
+    audioEngineRef.current?.seek(0);
     setProgress(0);
   };
 
@@ -755,7 +702,7 @@ const Mixer = () => {
   const handleSeek = (e) => {
     const newTime = parseFloat(e.target.value);
     setProgress(newTime);
-    setToneTransportSeconds(newTime);
+    audioEngineRef.current?.seek(newTime);
   };
 
   // Funções de interação da Timeline Waveform Scrubber (Ideia 3)
@@ -781,7 +728,7 @@ const Mixer = () => {
     setHoverTime(info.time);
 
     if (isScrubbingWaveform && isLoaded) {
-      setToneTransportSeconds(info.time);
+      audioEngineRef.current?.seek(info.time);
       setProgress(info.time);
     }
   };
@@ -799,7 +746,7 @@ const Mixer = () => {
       }
     }
     setIsScrubbingWaveform(true);
-    setToneTransportSeconds(info.time);
+    audioEngineRef.current?.seek(info.time);
     setProgress(info.time);
   };
 
@@ -820,16 +767,11 @@ const Mixer = () => {
     setIsScrubbingWaveform(false);
   };
 
-  // Mudança de volume de um stem individual
+  // Mudança de volume de um stem individual (80% = 0.0 dB Nominal / Ganho Unitário 1.0)
   const handleVolumeChange = useCallback((track, value) => {
     const numericValue = Math.max(0, Math.min(100, Math.round(parseFloat(value) || 0)));
     setVolumes((prev) => ({ ...prev, [track]: numericValue }));
-
-    if (players.current && players.current.has(track)) {
-      const player = players.current.player(track);
-      player.volume.value =
-        numericValue === 0 ? -Infinity : 20 * Math.log10((numericValue / 100) * 0.5);
-    }
+    audioEngineRef.current?.setStemVolume(track, numericValue);
   }, []);
 
   // Alternar Mute individual
@@ -861,12 +803,10 @@ const Mixer = () => {
   // Controle de Master Volume
   const handleMasterVolumeChange = (value) => {
     const numericValue = Math.max(0, Math.min(100, Math.round(parseFloat(value) || 0)));
+    const nextMuted = numericValue === 0;
     setMasterVolume(numericValue);
-    setIsMasterMuted(numericValue === 0);
-
-    setToneDestinationDb(
-      numericValue === 0 ? -Infinity : 20 * Math.log10(numericValue / 100)
-    );
+    setIsMasterMuted(nextMuted);
+    audioEngineRef.current?.setMasterVolume(numericValue, nextMuted);
   };
 
   // Alternar Mute Master
@@ -882,41 +822,26 @@ const Mixer = () => {
     }
   };
 
-  // Transposição Harmônica em Semitons (-12 a +12) com compensação da velocidade de reprodução
+  // Transposição Harmônica em Semitons (-12 a +12) via WSOLA Phase-Locked
   const changePitch = (delta) => {
     const nextPitch = currentPitch + delta;
-    if (!pitchShift.current || nextPitch < -12 || nextPitch > 12) return;
-    const harmonicCompensation = -12 * Math.log2(playbackSpeed);
-    pitchShift.current.pitch = nextPitch + harmonicCompensation;
+    if (nextPitch < -12 || nextPitch > 12) return;
+    audioEngineRef.current?.setPitch(nextPitch);
     setCurrentPitch(nextPitch);
     setCurrentKey(getShiftedKey(originalKey, nextPitch));
   };
 
   const resetPitch = () => {
-    if (!pitchShift.current) return;
-    const harmonicCompensation = -12 * Math.log2(playbackSpeed);
-    pitchShift.current.pitch = 0 + harmonicCompensation;
+    audioEngineRef.current?.setPitch(0);
     setCurrentPitch(0);
     setCurrentKey(getShiftedKey(originalKey, 0));
   };
 
-  // Controle de Velocidade com Preservação Harmônica de Tom
+  // Controle de Velocidade com Preservação Harmônica de Tom (Sem Duplicação de Fontes)
   const handleSpeedChange = (speed) => {
     const clamped = Math.max(0.5, Math.min(1.25, parseFloat(speed)));
     setPlaybackSpeed(clamped);
-
-    if (players.current) {
-      STEM_KEYS.forEach((track) => {
-        if (players.current.has(track)) {
-          players.current.player(track).playbackRate = clamped;
-        }
-      });
-    }
-
-    if (pitchShift.current) {
-      const harmonicCompensation = -12 * Math.log2(clamped);
-      pitchShift.current.pitch = currentPitch + harmonicCompensation;
-    }
+    audioEngineRef.current?.setSpeed(clamped);
   };
 
   // --- STUDIO PRACTICE SUITE: CONTROLES DE LOOP A-B ---
@@ -925,7 +850,7 @@ const Mixer = () => {
     setLoopA(target);
     if (loopB !== null && loopB > target) {
       setIsLooping(true);
-      configureToneTransportLoop(true, target, loopB);
+      audioEngineRef.current?.setLoop(true, target, loopB);
     }
   };
 
@@ -934,7 +859,7 @@ const Mixer = () => {
     setLoopB(target);
     if (loopA !== null && target > loopA) {
       setIsLooping(true);
-      configureToneTransportLoop(true, loopA, target);
+      audioEngineRef.current?.setLoop(true, loopA, target);
     }
   };
 
@@ -945,16 +870,17 @@ const Mixer = () => {
       setLoopA(start);
       setLoopB(end);
       setIsLooping(true);
-      configureToneTransportLoop(true, start, end);
+      audioEngineRef.current?.setLoop(true, start, end);
       return;
     }
 
     const next = !isLooping;
     setIsLooping(next);
-    configureToneTransportLoop(next, loopA, loopB);
+    audioEngineRef.current?.setLoop(next, loopA, loopB);
     if (next) {
-      if (Tone.Transport.seconds < loopA || Tone.Transport.seconds > loopB) {
-        setToneTransportSeconds(loopA);
+      const currentPos = audioEngineRef.current?.getCurrentSongTime() ?? progress;
+      if (currentPos < loopA || currentPos > loopB) {
+        audioEngineRef.current?.seek(loopA);
         setProgress(loopA);
       }
     }
@@ -964,7 +890,7 @@ const Mixer = () => {
     setLoopA(null);
     setLoopB(null);
     setIsLooping(false);
-    configureToneTransportLoop(false);
+    audioEngineRef.current?.setLoop(false);
   };
 
   // --- STUDIO PRACTICE SUITE: MARCADORES DE TREINO PERSISTENTES ---
@@ -987,8 +913,8 @@ const Mixer = () => {
     setLoopA(marker.start);
     setLoopB(marker.end);
     setIsLooping(true);
-    configureToneTransportLoop(true, marker.start, marker.end);
-    setToneTransportSeconds(marker.start);
+    audioEngineRef.current?.setLoop(true, marker.start, marker.end);
+    audioEngineRef.current?.seek(marker.start);
     setProgress(marker.start);
   }, []);
 
@@ -1295,7 +1221,7 @@ const Mixer = () => {
           <div
             onClick={() => {
               setIsPlaying(false);
-              Tone.Transport.stop();
+              audioEngineRef.current?.stop();
               navigate('/dashboard');
             }}
             className="flex items-center gap-3 cursor-pointer group"
@@ -1354,7 +1280,7 @@ const Mixer = () => {
             type="button"
             onClick={() => {
               setIsPlaying(false);
-              Tone.Transport.stop();
+              audioEngineRef.current?.stop();
               navigate('/dashboard');
             }}
             className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 px-3.5 py-2 rounded-xl border border-slate-200/90 dark:border-slate-700 shadow-2xs studio-btn-transition active:scale-95 cursor-pointer"

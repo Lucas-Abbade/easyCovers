@@ -121,20 +121,7 @@ async def upload_from_youtube(data: dict, db: Session = Depends(get_db)):
         cpu_count = os.cpu_count() or 1
         ffmpeg_threads = max(1, cpu_count - 1)
         
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'noplaylist': True,
-            'extract_flat': False,
-            'outtmpl': os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s"),
-            'postprocessor_args': ['-threads', str(ffmpeg_threads)],
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'quiet': True,
-            'no_warnings': True,
-        }
+        ydl_opts = _build_ydl_options(file_id, ffmpeg_threads)
 
         # Download do áudio do YouTube
         with YoutubeDL(ydl_opts) as ydl:
@@ -192,7 +179,8 @@ async def upload_from_youtube(data: dict, db: Session = Depends(get_db)):
             stem_files = [f for f in os.listdir(musica_folder) if f.endswith('.wav') and not f.endswith('_normalized.wav')]
             if len(stem_files) < 6:
                 shutil.rmtree(musica_folder, ignore_errors=True)
-        raise HTTPException(status_code=500, detail=f"Erro ao processar áudio do YouTube: {str(e)}")
+        clean_msg = re.sub(r'\x1b\[[0-9;]*m', '', str(e))
+        raise HTTPException(status_code=500, detail=f"Erro ao processar áudio do YouTube: {clean_msg}")
     
     finally:
         # Limpeza de arquivos temporários
@@ -208,22 +196,79 @@ async def upload_from_youtube(data: dict, db: Session = Depends(get_db)):
                 pass
 
 
+def _build_ydl_options(file_id: str, ffmpeg_threads: int) -> dict:
+    """
+    Configurações robustas para o yt-dlp:
+    - http_chunk_size: evita que a CDN do YouTube (googlevideo) feche a conexão por timeout
+      ou 'Remote end closed connection without response'.
+    - extractor_args: usa player_client android e web para contornar restrições anti-bot/SABR.
+    - source_address: força IPv4 (0.0.0.0), contornando falhas de rota IPv6 no Windows.
+    - retries / fragment_retries / socket_timeout: tolerância a instabilidades transitórias.
+    """
+    return {
+        'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
+        'noplaylist': True,
+        'extract_flat': False,
+        'outtmpl': os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s"),
+        'postprocessor_args': ['-threads', str(ffmpeg_threads)],
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '0',
+        }],
+        # Segmenta o fluxo em chunks de 10MB para prevenir 'Remote end closed connection'
+        'http_chunk_size': 10485760,
+        # Clientes móveis e web da YouTube API
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+                'player_skip': ['webpage', 'configs']
+            }
+        },
+        # Força IPv4 no Windows para rotas mais estáveis
+        'source_address': '0.0.0.0',
+        # Retentativas automáticas
+        'retries': 10,
+        'fragment_retries': 10,
+        'file_access_retries': 5,
+        'socket_timeout': 30,
+        'retry_sleep_functions': {'http': lambda n: min(2 ** n, 10)},
+        # Ignora verificação estrita de SSL em caso de proxy/antivírus de rede local
+        'nocheckcertificate': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        },
+        'quiet': True,
+        'no_warnings': True,
+    }
+
+
 def _download_full_track_auto_match(artist: str, title: str, expected_duration: int, file_id: str) -> str:
     """
     Localiza e baixa automaticamente a faixa completa em alta qualidade usando os metadados e duração oficial da Deezer.
+    Possui fallback automático entre múltiplos candidatos caso o primeiro sofra restrição ou queda de conexão.
     """
     cpu_count = os.cpu_count() or 1
     ffmpeg_threads = max(1, cpu_count - 1)
 
-    search_query = f"ytsearch5:{artist} - {title} official audio"
+    search_query = f"ytsearch6:{artist} - {title} official audio"
     search_opts = {
         'quiet': True,
         'no_warnings': True,
         'noplaylist': True,
         'extract_flat': True,
+        'source_address': '0.0.0.0',
+        'socket_timeout': 20,
+        'nocheckcertificate': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web']
+            }
+        }
     }
 
-    target_url = None
+    target_urls = []
     try:
         with YoutubeDL(search_opts) as ydl_search:
             search_info = ydl_search.extract_info(search_query, download=False)
@@ -231,7 +276,7 @@ def _download_full_track_auto_match(artist: str, title: str, expected_duration: 
 
             if entries:
                 if expected_duration and expected_duration > 30:
-                    # Filtra vídeos muito longos (ex: shows completos/compilações) e ordena pela proximidade da duração oficial da Deezer
+                    # Filtra vídeos muito longos (ex: shows completos) e ordena pela proximidade da duração oficial
                     valid_entries = [
                         e for e in entries
                         if not e.get('duration') or (30 <= e.get('duration', 0) <= max(expected_duration * 2, 900))
@@ -240,49 +285,63 @@ def _download_full_track_auto_match(artist: str, title: str, expected_duration: 
                     candidates.sort(
                         key=lambda e: abs((e.get('duration') or expected_duration) - expected_duration)
                     )
-                    best = candidates[0]
                 else:
-                    best = entries[0]
+                    candidates = entries
 
-                target_url = best.get('url') or best.get('webpage_url') or (f"https://www.youtube.com/watch?v={best['id']}" if best.get('id') else None)
+                for item in candidates[:4]:
+                    url = item.get('url') or item.get('webpage_url') or (f"https://www.youtube.com/watch?v={item['id']}" if item.get('id') else None)
+                    if url and url not in target_urls:
+                        target_urls.append(url)
     except Exception as search_err:
         print(f"[Auto-Match Search Warning] {search_err}")
 
-    if not target_url:
-        target_url = f"ytsearch1:{artist} - {title} audio"
+    # Fallbacks adicionais de busca caso a busca inicial retorne vazia
+    if not target_urls:
+        target_urls = [
+            f"ytsearch1:{artist} - {title} audio",
+            f"ytsearch1:{artist} - {title}"
+        ]
 
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'noplaylist': True,
-        'extract_flat': False,
-        'outtmpl': os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s"),
-        'postprocessor_args': ['-threads', str(ffmpeg_threads)],
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-        'quiet': True,
-        'no_warnings': True,
-    }
+    ydl_opts = _build_ydl_options(file_id, ffmpeg_threads)
 
     downloaded_file = None
-    with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(target_url, download=True)
-        if 'entries' in info and info['entries']:
-            info = info['entries'][0]
-        if 'requested_downloads' in info and info['requested_downloads']:
-            downloaded_file = info['requested_downloads'][0].get('filepath')
-        if not downloaded_file or not os.path.exists(downloaded_file):
-            downloaded_file = ydl.prepare_filename(info)
+    last_error = None
+
+    for target_url in target_urls:
+        try:
+            print(f"[Auto-Match] Tentando obter áudio de: {target_url}")
+            with YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(target_url, download=True)
+                if 'entries' in info and info['entries']:
+                    info = info['entries'][0]
+                if 'requested_downloads' in info and info['requested_downloads']:
+                    downloaded_file = info['requested_downloads'][0].get('filepath')
+                if not downloaded_file or not os.path.exists(downloaded_file):
+                    downloaded_file = ydl.prepare_filename(info)
+
+            if not downloaded_file or not os.path.exists(downloaded_file):
+                matches = glob.glob(os.path.join(DOWNLOAD_DIR, f"{file_id}.*"))
+                if matches:
+                    downloaded_file = matches[0]
+
+            if downloaded_file and os.path.exists(downloaded_file) and os.path.getsize(downloaded_file) > 1024:
+                print(f"[Auto-Match] Áudio baixado com sucesso: {downloaded_file}")
+                return downloaded_file
+
+        except Exception as err:
+            last_error = err
+            print(f"[Auto-Match Warning] Falha ao baixar candidato ({target_url}): {err}")
+            # Limpa parciais para não corromper a próxima tentativa
+            for partial in glob.glob(os.path.join(DOWNLOAD_DIR, f"{file_id}.*")):
+                try:
+                    os.remove(partial)
+                except Exception:
+                    pass
+            continue
 
     if not downloaded_file or not os.path.exists(downloaded_file):
-        matches = glob.glob(os.path.join(DOWNLOAD_DIR, f"{file_id}.*"))
-        if matches:
-            downloaded_file = matches[0]
-
-    if not downloaded_file or not os.path.exists(downloaded_file):
-        raise Exception("Não foi possível obter o arquivo de áudio completo para a faixa selecionada.")
+        clean_err = re.sub(r'\x1b\[[0-9;]*m', '', str(last_error or ''))
+        raise Exception(f"Não foi possível obter o áudio completo da música. Detalhes: {clean_err}")
 
     return downloaded_file
 
@@ -377,7 +436,8 @@ async def upload_from_catalog(data: dict, db: Session = Depends(get_db)):
             stem_files = [f for f in os.listdir(musica_folder) if f.endswith('.wav') and not f.endswith('_normalized.wav')]
             if len(stem_files) < 6:
                 shutil.rmtree(musica_folder, ignore_errors=True)
-        raise HTTPException(status_code=500, detail=f"Erro ao obter e separar o áudio do catálogo: {str(e)}")
+        clean_err = re.sub(r'\x1b\[[0-9;]*m', '', str(e))
+        raise HTTPException(status_code=500, detail=f"Erro ao obter e separar o áudio do catálogo: {clean_err}")
 
     finally:
         if downloaded_file and os.path.exists(downloaded_file):
