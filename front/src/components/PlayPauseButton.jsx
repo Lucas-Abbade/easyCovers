@@ -1,63 +1,109 @@
-import React from "react";
+import React from 'react';
+import { PlayOpticalIcon, PauseOpticalIcon } from './Icons';
 
-const PlayPauseButton = ({ isPlaying, isLoaded, togglePlay, size = "large" }) => {
-  const isLarge = size === "large";
-  const sizeClasses = isLarge ? "w-20 h-20 md:w-22 md:h-22" : "w-14 h-14";
+/**
+ * Botão Play/Pause 3D Óptico de Console de Estúdio (Ideia 5).
+ * Anel concêntrico metálico com halo luminoso reativo, centro óptico para o triângulo de Play
+ * e transições explícitas via `studio-btn-transition` (zero `transition-all`).
+ */
+const PlayPauseButton = ({ isPlaying, isLoaded, togglePlay, size = 'large' }) => {
+  const isLarge = size === 'large';
+  const outerSize = isLarge ? 'w-20 h-20 md:w-22 md:h-22 p-1.5' : 'w-14 h-14 p-1';
+  const iconSize = isLarge ? 'w-8 h-8 md:w-9 md:h-9' : 'w-6 h-6';
 
   return (
     <button
       type="button"
       onClick={togglePlay}
       disabled={!isLoaded}
-      aria-label={!isLoaded ? "Carregando áudio..." : isPlaying ? "Pausar reprodução (Espaço)" : "Iniciar reprodução (Espaço)"}
-      title={!isLoaded ? "Carregando faixas de áudio..." : isPlaying ? "Pausar (Espaço)" : "Tocar (Espaço)"}
-      className={`relative flex items-center justify-center rounded-full transition-all duration-300 transform active:scale-95 cursor-pointer disabled:cursor-wait disabled:opacity-75 focus:outline-none focus:ring-4 focus:ring-blue-300 ${sizeClasses} ${
+      aria-label={
         !isLoaded
-          ? "bg-slate-300 text-slate-500 shadow-md"
+          ? 'Carregando áudio...'
           : isPlaying
-          ? "bg-gradient-to-br from-red-500 via-red-600 to-rose-700 text-white shadow-[0_0_30px_rgba(225,29,72,0.5)] hover:shadow-[0_0_35px_rgba(225,29,72,0.7)] hover:scale-105"
-          : "bg-gradient-to-br from-[var(--color-brand-medium)] via-blue-600 to-[var(--color-brand-dark)] text-white shadow-[0_0_30px_rgba(43,105,230,0.5)] hover:shadow-[0_0_35px_rgba(43,105,230,0.75)] hover:scale-105"
+          ? 'Pausar reprodução (Espaço)'
+          : 'Iniciar reprodução (Espaço)'
+      }
+      title={
+        !isLoaded
+          ? 'Carregando faixas de áudio...'
+          : isPlaying
+          ? 'Pausar (Espaço)'
+          : 'Tocar (Espaço)'
+      }
+      className={`group relative flex items-center justify-center rounded-full studio-btn-transition active:scale-95 cursor-pointer disabled:cursor-wait disabled:opacity-75 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/60 ${outerSize} ${
+        !isLoaded
+          ? 'bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-md'
+          : isPlaying
+          ? 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 border border-amber-400/70 shadow-[0_0_32px_rgba(245,158,11,0.42)] hover:scale-105'
+          : 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 border border-blue-400/60 shadow-[0_0_32px_rgba(43,105,230,0.45)] hover:scale-105'
       }`}
     >
-      {/* Outer subtle glow ring when playing */}
-      {isPlaying && (
-        <span className="absolute inset-0 rounded-full bg-red-400 opacity-30 animate-ping pointer-events-none"></span>
+      {/* Halo pulsante externo quando o transporte está ativo */}
+      {isPlaying && isLoaded && (
+        <span
+          className="absolute inset-0 rounded-full bg-amber-400/25 animate-ping pointer-events-none"
+          aria-hidden="true"
+        />
       )}
 
-      {!isLoaded ? (
-        <div className="flex flex-col items-center justify-center">
-          <svg className="w-8 h-8 text-blue-600 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+      {/* Anel interno 3D concêntrico chanfrado */}
+      <span
+        className={`relative z-10 w-full h-full rounded-full flex items-center justify-center studio-btn-transition overflow-hidden ${
+          !isLoaded
+            ? 'bg-slate-300 dark:bg-slate-900 text-slate-500'
+            : isPlaying
+            ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 text-white shadow-inner'
+            : 'bg-gradient-to-br from-[var(--color-brand-medium)] via-blue-600 to-[var(--color-brand-dark)] text-white shadow-inner'
+        }`}
+      >
+        {/* Reflexo especular superior do domo 3D */}
+        <span
+          className="pointer-events-none absolute inset-x-2 top-0.5 h-1/3 rounded-t-full bg-gradient-to-b from-white/30 to-transparent"
+          aria-hidden="true"
+        />
+
+        {/* LED superior de estado no aro do botão */}
+        {isLoaded && (
+          <span
+            className={`pointer-events-none absolute top-1.5 w-1.5 h-1.5 rounded-full ${
+              isPlaying
+                ? 'bg-amber-200 shadow-[0_0_6px_#fef08a]'
+                : 'bg-cyan-300 shadow-[0_0_6px_#67e8f9]'
+            }`}
+            aria-hidden="true"
+          />
+        )}
+
+        {!isLoaded ? (
+          <svg
+            className="w-7 h-7 text-[var(--color-brand-medium)] dark:text-blue-400 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="3.5"
+            />
+            <path
+              className="opacity-85"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            />
           </svg>
-        </div>
-      ) : isPlaying ? (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="w-9 h-9 md:w-10 md:h-10 text-white drop-shadow-md"
-        >
-          <path
-            fillRule="evenodd"
-            d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm9.75 0a.75.75 0 01.75-.75H18a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H16.5a.75.75 0 01-.75-.75V5.25z"
-            clipRule="evenodd"
+        ) : isPlaying ? (
+          <PauseOpticalIcon className={`${iconSize} text-white drop-shadow-md`} />
+        ) : (
+          <PlayOpticalIcon
+            className={`${iconSize} text-white translate-x-[2px] drop-shadow-md`}
           />
-        </svg>
-      ) : (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="w-10 h-10 md:w-11 md:h-11 text-white pl-1 drop-shadow-md"
-        >
-          <path
-            fillRule="evenodd"
-            d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"
-            clipRule="evenodd"
-          />
-        </svg>
-      )}
+        )}
+      </span>
     </button>
   );
 };

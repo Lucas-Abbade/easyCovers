@@ -3,85 +3,107 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import * as Tone from 'tone';
 import PlayPauseButton from '../components/PlayPauseButton';
 import ThemeToggle from '../components/ThemeToggle';
+import DashboardStudioBackground from '../components/DashboardStudioBackground';
+import MixerMasterRack from '../components/MixerMasterRack';
+import StudioChannelStrip from '../components/StudioChannelStrip';
+import {
+  MixerFadersIcon,
+  WaveformIcon,
+  LoopRepeatIcon,
+  MetronomeIcon,
+  MicLyricsIcon,
+  HeadphonesStudioIcon,
+} from '../components/Icons';
 import { getGenreImage } from '../utils/genreImages';
+import {
+  useScrollVariable,
+  useDocumentVisibility,
+} from '../utils/motionTokens';
 
 // Identidade visual cromática e metadados padronizados para os 6 stems isolados
 const STEM_CONFIG = {
   vocals: {
-    label: "Vocais",
-    iconSrc: "/assets/icons/stem_vocals.png",
-    color: "from-purple-500 to-indigo-600",
-    badgeBg: "bg-purple-50",
-    badgeText: "text-purple-700",
-    borderColor: "border-purple-200",
-    accent: "text-purple-600",
-    accentHex: "#9333ea"
+    label: 'Vocais',
+    shortLabel: 'VOZ',
+    iconSrc: '/assets/icons/stem_vocals.png',
+    color: 'from-purple-500 to-indigo-600',
+    badgeBg: 'bg-purple-50',
+    badgeText: 'text-purple-700',
+    borderColor: 'border-purple-200',
+    accent: 'text-purple-600',
+    accentHex: '#9333ea',
   },
   drums: {
-    label: "Bateria",
-    iconSrc: "/assets/icons/stem_drums.png",
-    color: "from-amber-500 to-orange-600",
-    badgeBg: "bg-amber-50",
-    badgeText: "text-amber-700",
-    borderColor: "border-amber-200",
-    accent: "text-amber-600",
-    accentHex: "#f59e0b"
+    label: 'Bateria',
+    shortLabel: 'DRM',
+    iconSrc: '/assets/icons/stem_drums.png',
+    color: 'from-amber-500 to-orange-600',
+    badgeBg: 'bg-amber-50',
+    badgeText: 'text-amber-700',
+    borderColor: 'border-amber-200',
+    accent: 'text-amber-600',
+    accentHex: '#f59e0b',
   },
   bass: {
-    label: "Baixo",
-    iconSrc: "/assets/icons/stem_bass.png",
-    color: "from-emerald-500 to-teal-600",
-    badgeBg: "bg-emerald-50",
-    badgeText: "text-emerald-700",
-    borderColor: "border-emerald-200",
-    accent: "text-emerald-600",
-    accentHex: "#10b981"
-  },
-  guitar: {
-    label: "Guitarra",
-    iconSrc: "/assets/icons/stem_guitar.png",
-    color: "from-blue-500 to-cyan-600",
-    badgeBg: "bg-blue-50",
-    badgeText: "text-blue-700",
-    borderColor: "border-blue-200",
-    accent: "text-blue-600",
-    accentHex: "#2563eb"
-  },
-  piano: {
-    label: "Teclado / Piano",
-    iconSrc: "/assets/icons/stem_piano.png",
-    color: "from-pink-500 to-rose-600",
-    badgeBg: "bg-pink-50",
-    badgeText: "text-pink-700",
-    borderColor: "border-pink-200",
-    accent: "text-pink-600",
-    accentHex: "#ec4899"
+    label: 'Baixo',
+    shortLabel: 'BAS',
+    iconSrc: '/assets/icons/stem_bass.png',
+    color: 'from-emerald-500 to-teal-600',
+    badgeBg: 'bg-emerald-50',
+    badgeText: 'text-emerald-700',
+    borderColor: 'border-emerald-200',
+    accent: 'text-emerald-600',
+    accentHex: '#10b981',
   },
   other: {
-    label: "Outros / FX",
-    iconSrc: "/assets/icons/stem_other.png",
-    color: "from-slate-500 to-gray-700",
-    badgeBg: "bg-slate-50",
-    badgeText: "text-slate-700",
-    borderColor: "border-slate-200",
-    accent: "text-slate-600",
-    accentHex: "#64748b"
-  }
+    label: 'Outros / FX',
+    shortLabel: 'SYN',
+    iconSrc: '/assets/icons/stem_other.png',
+    color: 'from-slate-500 to-gray-700',
+    badgeBg: 'bg-slate-50',
+    badgeText: 'text-slate-700',
+    borderColor: 'border-slate-200',
+    accent: 'text-slate-600',
+    accentHex: '#64748b',
+  },
+  guitar: {
+    label: 'Guitarra',
+    shortLabel: 'GTR',
+    iconSrc: '/assets/icons/stem_guitar.png',
+    color: 'from-blue-500 to-cyan-600',
+    badgeBg: 'bg-blue-50',
+    badgeText: 'text-blue-700',
+    borderColor: 'border-blue-200',
+    accent: 'text-blue-600',
+    accentHex: '#2563eb',
+  },
+  piano: {
+    label: 'Teclado / Piano',
+    shortLabel: 'PNO',
+    iconSrc: '/assets/icons/stem_piano.png',
+    color: 'from-pink-500 to-rose-600',
+    badgeBg: 'bg-pink-50',
+    badgeText: 'text-pink-700',
+    borderColor: 'border-pink-200',
+    accent: 'text-pink-600',
+    accentHex: '#ec4899',
+  },
 };
 
-const STEM_KEYS = ["vocals", "drums", "bass", "other", "guitar", "piano"];
-const KEY_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const STEM_KEYS = ['vocals', 'drums', 'bass', 'other', 'guitar', 'piano'];
+const KEY_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const WAVEFORM_BAR_COUNT = 72;
 
 const normalizeKeyName = (key) => {
-  if (!key) return "Unknown";
+  if (!key) return 'Unknown';
   if (typeof key === 'object' && key.value) return key.value;
   return key;
 };
 
 const getShiftedKey = (originalKey, semitones) => {
   const normalized = normalizeKeyName(originalKey);
-  if (!normalized || normalized === "Unknown") return "Unknown";
-  const isMinor = normalized.endsWith("m");
+  if (!normalized || normalized === 'Unknown') return 'Unknown';
+  const isMinor = normalized.endsWith('m');
   const root = isMinor ? normalized.slice(0, -1) : normalized;
   const index = KEY_NAMES.indexOf(root);
   if (index === -1) return normalized;
@@ -112,44 +134,148 @@ const parseLrc = (lrcString) => {
   return result.sort((a, b) => a.time - b.time);
 };
 
+// Converte dB do Tone.Meter (-48 dB .. 0 dB) em escala [0..100]
+const normalizeMeterDb = (rawValue) => {
+  const db = Array.isArray(rawValue) ? Math.max(...rawValue) : Number(rawValue);
+  if (!Number.isFinite(db) || db <= -48) return 0;
+  return Math.min(100, Math.max(0, Math.round(((db + 48) / 48) * 100)));
+};
+
+// Funções utilitárias de transporte do Tone.js (evita mutação direta de import no React Compiler)
+const setToneTransportSeconds = (seconds) => {
+  Tone.Transport.seconds = seconds;
+};
+
+const configureToneTransportLoop = (enabled, startSec, endSec) => {
+  if (typeof startSec === 'number') Tone.Transport.loopStart = startSec;
+  if (typeof endSec === 'number') Tone.Transport.loopEnd = endSec;
+  Tone.Transport.loop = Boolean(enabled);
+};
+
+const resetToneTransport = () => {
+  Tone.Transport.stop();
+  Tone.Transport.loop = false;
+  Tone.Transport.seconds = 0;
+};
+
+const setToneDestinationDb = (dbValue) => {
+  if (Tone.Destination) {
+    Tone.Destination.volume.value = dbValue;
+  }
+};
+
+const loadInitialPracticeMarkers = (songObj) => {
+  if (!songObj?.id) return [];
+  const storageKey = `easycovers_markers_${songObj.id}`;
+  try {
+    const local = localStorage.getItem(storageKey);
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Erro ao ler marcadores locais:', e);
+  }
+  if (songObj.practice_markers) {
+    try {
+      const parsed =
+        typeof songObj.practice_markers === 'string'
+          ? JSON.parse(songObj.practice_markers)
+          : songObj.practice_markers;
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      console.warn('Erro ao ler marcadores do banco:', e);
+    }
+  }
+  return [];
+};
+
 const Mixer = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const song = location.state?.song;
 
+  const mixerRootRef = useRef(null);
+  useScrollVariable(mixerRootRef);
+  const isTabVisible = useDocumentVisibility();
+
+  // Estados da Sala de Controle 3D e Modo do Console (Opção A: 'daw' vertical | Opção C: 'stage' horizontal)
+  const [studioLiveMode, setStudioLiveMode] = useState(true);
+  const [phantomPower, setPhantomPower] = useState(true);
+  const [consoleMode, setConsoleMode] = useState('daw'); // 'daw' | 'stage'
+  const [activeMixPreset, setActiveMixPreset] = useState('full');
+  const [hoveredStem, setHoveredStem] = useState(null);
+
+  const initialMarker = location.state?.initialMarker;
+
   // Estados de reprodução e sincronização
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(() =>
+    typeof initialMarker?.start === 'number' ? initialMarker.start : 0
+  );
   const [duration, setDuration] = useState(0);
+
+  // Estados do Timeline Waveform Scrubber (Hover Timecode Guide & Drag)
+  const waveformContainerRef = useRef(null);
+  const [hoverTime, setHoverTime] = useState(null);
+  const [hoverPercent, setHoverPercent] = useState(0);
+  const [isScrubbingWaveform, setIsScrubbingWaveform] = useState(false);
 
   // Estados do Modo Karaokê & Letras Sincronizadas
   const [showLyrics, setShowLyrics] = useState(false);
   const [lyricsData, setLyricsData] = useState(null);
-  const [isLoadingLyrics, setIsLoadingLyrics] = useState(false);
+  const [isLoadingLyrics, setIsLoadingLyrics] = useState(() => Boolean(song?.name));
   const [parsedLyrics, setParsedLyrics] = useState([]);
   const lyricsContainerRef = useRef(null);
 
   // Estados de mixagem por stem (volume, mute e solo de nível DAW)
-  const [volumes, setVolumes] = useState({ vocals: 80, drums: 80, bass: 80, other: 80, guitar: 80, piano: 80 });
-  const [mutes, setMutes] = useState({ vocals: false, drums: false, bass: false, other: false, guitar: false, piano: false });
-  const [solos, setSolos] = useState({ vocals: false, drums: false, bass: false, other: false, guitar: false, piano: false });
+  const [volumes, setVolumes] = useState({
+    vocals: 80,
+    drums: 80,
+    bass: 80,
+    other: 80,
+    guitar: 80,
+    piano: 80,
+  });
+  const [mutes, setMutes] = useState({
+    vocals: false,
+    drums: false,
+    bass: false,
+    other: false,
+    guitar: false,
+    piano: false,
+  });
+  const [solos, setSolos] = useState({
+    vocals: false,
+    drums: false,
+    bass: false,
+    other: false,
+    guitar: false,
+    piano: false,
+  });
 
   // Master Volume e Mute Master
   const [masterVolume, setMasterVolume] = useState(100);
   const [isMasterMuted, setIsMasterMuted] = useState(false);
   const prevMasterVolumeRef = useRef(100);
 
-  const rawKey = song?.original_key || song?.originalKey || "Unknown";
+  const rawKey = song?.original_key || song?.originalKey || 'Unknown';
   // Controle de Transposição Harmônica (Pitch Shifting)
   const [originalKey] = useState(() => normalizeKeyName(rawKey));
   const [currentPitch, setCurrentPitch] = useState(0);
   const [currentKey, setCurrentKey] = useState(() => getShiftedKey(rawKey, 0));
 
   // --- STUDIO PRACTICE SUITE: Estados de Loop A-B, Velocidade, Metrônomo e Marcadores ---
-  const [loopA, setLoopA] = useState(null); // segundos
-  const [loopB, setLoopB] = useState(null); // segundos
-  const [isLooping, setIsLooping] = useState(false);
+  const [loopA, setLoopA] = useState(() =>
+    typeof initialMarker?.start === 'number' ? initialMarker.start : null
+  ); // segundos
+  const [loopB, setLoopB] = useState(() =>
+    typeof initialMarker?.end === 'number' ? initialMarker.end : null
+  ); // segundos
+  const [isLooping, setIsLooping] = useState(() =>
+    typeof initialMarker?.start === 'number' && typeof initialMarker?.end === 'number'
+  );
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0); // 0.5x a 1.25x
   const [isCountInEnabled, setIsCountInEnabled] = useState(false);
   const [isCountingIn, setIsCountingIn] = useState(false);
@@ -157,38 +283,120 @@ const Mixer = () => {
   const countInTimersRef = useRef([]);
 
   // Marcadores de Treino Nomeados (ex: Solo, Riff, Refrão)
-  const [practiceMarkers, setPracticeMarkers] = useState([]);
+  const [practiceMarkers, setPracticeMarkers] = useState(() =>
+    loadInitialPracticeMarkers(song)
+  );
   const [isSavingMarker, setIsSavingMarker] = useState(false);
   const [newMarkerName, setNewMarkerName] = useState('');
 
+  // Referências de Áudio e Medidores em Tempo Real (Ideia 1)
   const players = useRef(null);
   const pitchShift = useRef(null);
+  const meters = useRef({});
   const progressInterval = useRef(null);
+  const lastProgressStateUpdateRef = useRef(0);
 
+  // Refs espelhadas para leitura síncrona no loop de 60fps sem recriar o rAF
+  const audioStateRef = useRef({
+    volumes,
+    mutes,
+    solos,
+    masterVolume,
+    isMasterMuted,
+    playbackSpeed,
+    initialMarker,
+  });
+
+  useEffect(() => {
+    audioStateRef.current = {
+      volumes,
+      mutes,
+      solos,
+      masterVolume,
+      isMasterMuted,
+      playbackSpeed,
+      initialMarker,
+    };
+  }, [volumes, mutes, solos, masterVolume, isMasterMuted, playbackSpeed, initialMarker]);
+
+  const hasAnySolo = useMemo(() => Object.values(solos).some(Boolean), [solos]);
+
+  // Verifica se um canal está efetivamente mutado
+  const isTrackEffectivelyMuted = useCallback(
+    (track) => {
+      if (hasAnySolo) {
+        return !solos[track] || mutes[track];
+      }
+      return mutes[track];
+    },
+    [hasAnySolo, solos, mutes]
+  );
+
+  // Grade determinística de 72 barras para o Waveform Scrubber (Ideia 3)
+  const waveformBars = useMemo(() => {
+    const seedStr = `${song?.id || ''}-${song?.name || 'EasyCovers'}-${song?.artist || ''}`;
+    let hash = 2166136261;
+    for (let i = 0; i < seedStr.length; i++) {
+      hash ^= seedStr.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+
+    // Ganho médio ativo dos 6 canais para modular a envoltória visual
+    const activeGainSum = STEM_KEYS.reduce((acc, key) => {
+      const muted = hasAnySolo ? !solos[key] || mutes[key] : mutes[key];
+      return acc + (muted ? 0 : volumes[key]);
+    }, 0);
+    const activeFactor = Math.max(0.22, Math.min(1.15, activeGainSum / 480));
+
+    return Array.from({ length: WAVEFORM_BAR_COUNT }, (_, idx) => {
+      const pos = idx / WAVEFORM_BAR_COUNT;
+      // Envoltória musical natural (intro suave, corpo denso, final gradual)
+      const envelope =
+        pos < 0.07
+          ? 0.45 + (pos / 0.07) * 0.55
+          : pos > 0.92
+          ? 0.4 + ((1 - pos) / 0.08) * 0.6
+          : 1.0;
+
+      const wave1 = Math.abs(Math.sin((idx + (hash & 0xff)) * 0.43));
+      const wave2 = Math.abs(Math.cos((idx * 1.7 + ((hash >> 8) & 0xff)) * 0.29));
+      const rawHeight = (24 + wave1 * 46 + wave2 * 28) * envelope * activeFactor;
+      return Math.min(96, Math.max(16, Math.round(rawHeight)));
+    });
+  }, [song?.id, song?.name, song?.artist, volumes, mutes, solos, hasAnySolo]);
 
   // Busca letras no backend via LRCLIB
   useEffect(() => {
-    if (!song?.name) return;
+    if (!song?.name) return undefined;
 
-    setIsLoadingLyrics(true);
+    let cancelled = false;
     const trackName = encodeURIComponent(song.name);
     const artistName = encodeURIComponent(song.artist || '');
     const durParam = duration > 0 ? `&duration=${Math.round(duration)}` : '';
 
-    fetch(`http://localhost:8000/api/music/lyrics?track_name=${trackName}&artist_name=${artistName}${durParam}`)
-      .then(res => res.json())
-      .then(data => {
+    fetch(
+      `http://localhost:8000/api/music/lyrics?track_name=${trackName}&artist_name=${artistName}${durParam}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
         setLyricsData(data);
         if (data?.synced_lyrics) {
           setParsedLyrics(parseLrc(data.synced_lyrics));
         }
       })
-      .catch(err => {
-        console.warn("Erro ao buscar letra sincronizada:", err);
+      .catch((err) => {
+        console.warn('Erro ao buscar letra sincronizada:', err);
       })
       .finally(() => {
-        setIsLoadingLyrics(false);
+        if (!cancelled) {
+          setIsLoadingLyrics(false);
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [song?.name, song?.artist, duration]);
 
   // Identifica a linha ativa da letra sincronizada com o Tone.Transport
@@ -208,7 +416,9 @@ const Mixer = () => {
   // Auto-scroll da linha ativa no teleprompter de letras
   useEffect(() => {
     if (showLyrics && activeLyricIndex >= 0 && lyricsContainerRef.current) {
-      const activeEl = lyricsContainerRef.current.querySelector(`[data-lyric-index="${activeLyricIndex}"]`);
+      const activeEl = lyricsContainerRef.current.querySelector(
+        `[data-lyric-index="${activeLyricIndex}"]`
+      );
       if (activeEl) {
         activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -219,13 +429,13 @@ const Mixer = () => {
   const handleLyricSeek = (time) => {
     if (!isLoaded || duration <= 0) return;
     const target = Math.max(0, Math.min(duration, time));
-    Tone.Transport.seconds = target;
+    setToneTransportSeconds(target);
     setProgress(target);
   };
 
   // Formatação de tempo (MM:SS)
   const formatTime = (timeInSeconds) => {
-    if (!timeInSeconds || isNaN(timeInSeconds)) return "0:00";
+    if (!timeInSeconds || isNaN(timeInSeconds)) return '0:00';
     const min = Math.floor(timeInSeconds / 60);
     const sec = Math.floor(timeInSeconds % 60);
     return `${min}:${sec < 10 ? '0' : ''}${sec}`;
@@ -234,23 +444,32 @@ const Mixer = () => {
   // Aplicação da matriz de Mute / Solo de estúdio
   const applyAudioRouting = useCallback((activeMutes, activeSolos) => {
     if (!players.current) return;
-    const hasAnySolo = Object.values(activeSolos).some(Boolean);
+    const anySolo = Object.values(activeSolos).some(Boolean);
 
-    STEM_KEYS.forEach(track => {
+    STEM_KEYS.forEach((track) => {
       if (players.current.has(track)) {
-        let shouldMute;
-        if (hasAnySolo) {
-          // Se qualquer faixa estiver em solo, silencia todas que não estão em solo ou que estão mutadas
-          shouldMute = !activeSolos[track] || activeMutes[track];
-        } else {
-          shouldMute = activeMutes[track];
-        }
+        const shouldMute = anySolo
+          ? !activeSolos[track] || activeMutes[track]
+          : activeMutes[track];
         players.current.player(track).mute = shouldMute;
       }
     });
   }, []);
 
-  // Inicialização do Tone.js e dos 6 players de áudio
+  // Reseta todas as variáveis CSS de nível quando pausado
+  const resetMeterCssVariables = useCallback(() => {
+    const rootEl = mixerRootRef.current;
+    if (!rootEl) return;
+    STEM_KEYS.forEach((track) => {
+      rootEl.style.setProperty(`--level-${track}`, '0');
+    });
+    rootEl.style.setProperty('--level-master-l', '0');
+    rootEl.style.setProperty('--level-master-r', '0');
+    rootEl.style.setProperty('--vu-angle-l', '-36deg');
+    rootEl.style.setProperty('--vu-angle-r', '-36deg');
+  }, []);
+
+  // Inicialização do Tone.js, dos 6 players de áudio e dos 6 Tone.Meter (Ideia 1)
   useEffect(() => {
     if (!song) {
       navigate('/dashboard');
@@ -270,76 +489,179 @@ const Mixer = () => {
     pitchShift.current = new Tone.PitchShift(0).toDestination();
 
     players.current = new Tone.Players({
-      vocals: baseUrl + "vocals.wav",
-      drums: baseUrl + "drums.wav",
-      bass: baseUrl + "bass.wav",
-      other: baseUrl + "other.wav",
-      guitar: baseUrl + "guitar.wav",
-      piano: baseUrl + "piano.wav",
+      vocals: baseUrl + 'vocals.wav',
+      drums: baseUrl + 'drums.wav',
+      bass: baseUrl + 'bass.wav',
+      other: baseUrl + 'other.wav',
+      guitar: baseUrl + 'guitar.wav',
+      piano: baseUrl + 'piano.wav',
     }).connect(pitchShift.current);
 
-    Tone.loaded().then(() => {
-      setIsLoaded(true);
-      Tone.Destination.volume.value = 0;
-
-      // Pega duração a partir da faixa de vocais ou fallback
-      if (players.current.has("vocals")) {
-        setDuration(players.current.player("vocals").buffer.duration);
+    // Instancia um Tone.Meter({ smoothing: 0.78 }) para cada stem
+    const createdMeters = {};
+    STEM_KEYS.forEach((track) => {
+      if (players.current.has(track)) {
+        const meter = new Tone.Meter({ smoothing: 0.78 });
+        players.current.player(track).connect(meter);
+        createdMeters[track] = meter;
       }
-
-      // Sincroniza todas as 6 faixas no Transport do Tone.js
-      STEM_KEYS.forEach(track => {
-        if (players.current.has(track)) {
-          const player = players.current.player(track);
-          player.volume.value = 20 * Math.log10((80 / 100) * 0.5);
-          player.playbackRate = playbackSpeed;
-          player.sync().start(0);
-        }
-      });
-    }).catch(err => {
-      console.error("Falha ao carregar stems no Tone.js:", err);
     });
+    meters.current = createdMeters;
+
+    Tone.loaded()
+      .then(() => {
+        setIsLoaded(true);
+        setToneDestinationDb(0);
+
+        if (players.current.has('vocals')) {
+          setDuration(players.current.player('vocals').buffer.duration);
+        }
+
+        STEM_KEYS.forEach((track) => {
+          if (players.current.has(track)) {
+            const player = players.current.player(track);
+            player.volume.value = 20 * Math.log10((80 / 100) * 0.5);
+            player.playbackRate = audioStateRef.current.playbackSpeed || 1.0;
+            player.sync().start(0);
+          }
+        });
+
+        // Aplica marcador inicial vindo do Dashboard se houver
+        const initMarker = audioStateRef.current.initialMarker;
+        if (
+          typeof initMarker?.start === 'number' &&
+          typeof initMarker?.end === 'number'
+        ) {
+          configureToneTransportLoop(true, initMarker.start, initMarker.end);
+          setToneTransportSeconds(initMarker.start);
+        }
+      })
+      .catch((err) => {
+        console.error('Falha ao carregar stems no Tone.js:', err);
+      });
 
     return () => {
       cancelAnimationFrame(progressInterval.current);
-      countInTimersRef.current.forEach(t => clearTimeout(t));
-      Tone.Transport.stop();
-      Tone.Transport.loop = false;
-      Tone.Transport.seconds = 0;
+      countInTimersRef.current.forEach((t) => clearTimeout(t));
+      resetToneTransport();
+      Object.values(meters.current || {}).forEach((m) => {
+        try {
+          m?.dispose();
+        } catch {
+          // Ignora erro de dispose
+        }
+      });
+      meters.current = {};
       players.current?.dispose();
       pitchShift.current?.dispose();
     };
   }, [song, navigate]);
 
-  // Atualização fluida do progresso do áudio via requestAnimationFrame
+  // Loop de 60fps via requestAnimationFrame: atualiza --level-{track} no DOM (Zero Re-render) e progresso
   useEffect(() => {
-    const updateProgress = () => {
-      if (Tone.Transport.state === 'started') {
-        setProgress(Tone.Transport.seconds);
+    if (!isPlaying || !isTabVisible) {
+      resetMeterCssVariables();
+      return undefined;
+    }
 
-        if (!isLooping && duration > 0 && Tone.Transport.seconds >= duration) {
+    const updateAudioTelemetry = (now) => {
+      if (Tone.Transport.state === 'started') {
+        const currentSec = Tone.Transport.seconds;
+
+        // Atualiza o state React de progress a ~20fps (suficiente para MM:SS.d) evitando 60 re-renders/s
+        if (now - lastProgressStateUpdateRef.current >= 48) {
+          lastProgressStateUpdateRef.current = now;
+          setProgress(currentSec);
+        }
+
+        // Atualiza variáveis CSS dos medidores a 60fps direto na GPU
+        const rootEl = mixerRootRef.current;
+        if (rootEl) {
+          const {
+            volumes: curVols,
+            mutes: curMutes,
+            solos: curSolos,
+            masterVolume: curMasterVol,
+            isMasterMuted: curMasterMuted,
+          } = audioStateRef.current;
+          const anySolo = Object.values(curSolos).some(Boolean);
+          const masterFactor = curMasterMuted ? 0 : curMasterVol / 100;
+
+          let sumLeft = 0;
+          let sumRight = 0;
+          let maxStemLevel = 0;
+
+          STEM_KEYS.forEach((track, idx) => {
+            const effectivelyMuted = anySolo
+              ? !curSolos[track] || curMutes[track]
+              : curMutes[track];
+            const meter = meters.current?.[track];
+            let level = 0;
+
+            if (!effectivelyMuted && curVols[track] > 0 && !curMasterMuted && meter) {
+              const rawDb = meter.getValue();
+              level = normalizeMeterDb(rawDb);
+              // Fallback dinâmico suave caso o buffer ainda esteja estabilizando
+              if (level === 0 && curVols[track] > 0) {
+                const wave = Math.abs(Math.sin(currentSec * (3.2 + idx * 0.7) + idx));
+                level = Math.round((curVols[track] * 0.65) * (0.45 + wave * 0.45));
+              }
+            }
+
+            rootEl.style.setProperty(`--level-${track}`, String(level));
+            if (level > maxStemLevel) maxStemLevel = level;
+
+            // Panorâmica sutil L/R para alimentar o Duplo VU Meter do Master Bus
+            if (idx % 2 === 0) {
+              sumLeft += level * 0.42;
+              sumRight += level * 0.34;
+            } else {
+              sumLeft += level * 0.34;
+              sumRight += level * 0.42;
+            }
+          });
+
+          const masterL = Math.min(
+            100,
+            Math.round(Math.max(maxStemLevel * 0.78, sumLeft * 0.5) * masterFactor)
+          );
+          const masterR = Math.min(
+            100,
+            Math.round(Math.max(maxStemLevel * 0.74, sumRight * 0.5) * masterFactor)
+          );
+
+          // Mapeia [0..100] -> [-36deg..+32deg] para as agulhas balísticas do VU Meter
+          const angleL = (-36 + (masterL / 100) * 68).toFixed(1);
+          const angleR = (-36 + (masterR / 100) * 68).toFixed(1);
+
+          rootEl.style.setProperty('--level-master-l', String(masterL));
+          rootEl.style.setProperty('--level-master-r', String(masterR));
+          rootEl.style.setProperty('--vu-angle-l', `${angleL}deg`);
+          rootEl.style.setProperty('--vu-angle-r', `${angleR}deg`);
+        }
+
+        if (!isLooping && duration > 0 && currentSec >= duration) {
           Tone.Transport.stop();
-          Tone.Transport.seconds = 0;
+          setToneTransportSeconds(0);
           setProgress(0);
           setIsPlaying(false);
+          resetMeterCssVariables();
         } else {
-          progressInterval.current = requestAnimationFrame(updateProgress);
+          progressInterval.current = requestAnimationFrame(updateAudioTelemetry);
         }
       }
     };
 
-    if (isPlaying) {
-      progressInterval.current = requestAnimationFrame(updateProgress);
-    }
-
+    progressInterval.current = requestAnimationFrame(updateAudioTelemetry);
     return () => cancelAnimationFrame(progressInterval.current);
-  }, [isPlaying, duration, isLooping]);
-
+  }, [isPlaying, isTabVisible, duration, isLooping, resetMeterCssVariables]);
 
   // Síntese de clique para contagem de entrada (Metrônomo Pre-Roll de 4 tempos)
   const playClickSound = useCallback((freq = 800) => {
     try {
-      const ctx = Tone.context?.rawContext || (Tone.getContext && Tone.getContext()?.rawContext);
+      const ctx =
+        Tone.context?.rawContext ||
+        (Tone.getContext && Tone.getContext()?.rawContext);
       if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -351,38 +673,41 @@ const Mixer = () => {
       osc.start();
       osc.stop(ctx.currentTime + 0.08);
     } catch (err) {
-      console.warn("Falha no clique do metrônomo:", err);
+      console.warn('Falha no clique do metrônomo:', err);
     }
   }, []);
 
-  const runCountIn = useCallback((onFinished) => {
-    setIsCountingIn(true);
-    setCountInNumber(4);
-    playClickSound(800);
-
-    const t1 = setTimeout(() => {
-      setCountInNumber(3);
+  const runCountIn = useCallback(
+    (onFinished) => {
+      setIsCountingIn(true);
+      setCountInNumber(4);
       playClickSound(800);
-    }, 500);
 
-    const t2 = setTimeout(() => {
-      setCountInNumber(2);
-      playClickSound(800);
-    }, 1000);
+      const t1 = setTimeout(() => {
+        setCountInNumber(3);
+        playClickSound(800);
+      }, 500);
 
-    const t3 = setTimeout(() => {
-      setCountInNumber(1);
-      playClickSound(1200); // 4º tempo mais agudo
-    }, 1500);
+      const t2 = setTimeout(() => {
+        setCountInNumber(2);
+        playClickSound(800);
+      }, 1000);
 
-    const t4 = setTimeout(() => {
-      setCountInNumber(null);
-      setIsCountingIn(false);
-      onFinished();
-    }, 2000);
+      const t3 = setTimeout(() => {
+        setCountInNumber(1);
+        playClickSound(1200); // 4º tempo mais agudo (GO!)
+      }, 1500);
 
-    countInTimersRef.current = [t1, t2, t3, t4];
-  }, [playClickSound]);
+      const t4 = setTimeout(() => {
+        setCountInNumber(null);
+        setIsCountingIn(false);
+        onFinished();
+      }, 2000);
+
+      countInTimersRef.current = [t1, t2, t3, t4];
+    },
+    [playClickSound]
+  );
 
   // Alternar Play / Pause com suporte a Count-in
   const togglePlay = async () => {
@@ -391,7 +716,7 @@ const Mixer = () => {
     }
 
     if (isPlaying || isCountingIn) {
-      countInTimersRef.current.forEach(t => clearTimeout(t));
+      countInTimersRef.current.forEach((t) => clearTimeout(t));
       setCountInNumber(null);
       setIsCountingIn(false);
       Tone.Transport.pause();
@@ -412,66 +737,136 @@ const Mixer = () => {
   // Salto de tempo (+ ou - segundos)
   const handleSeekDelta = (deltaSeconds) => {
     if (!isLoaded || duration <= 0) return;
-    const target = Math.max(0, Math.min(duration, Tone.Transport.seconds + deltaSeconds));
-    Tone.Transport.seconds = target;
+    const target = Math.max(
+      0,
+      Math.min(duration, Tone.Transport.seconds + deltaSeconds)
+    );
+    setToneTransportSeconds(target);
     setProgress(target);
   };
 
   // Reiniciar faixa do início
   const handleRestart = () => {
-    Tone.Transport.seconds = 0;
+    setToneTransportSeconds(0);
     setProgress(0);
   };
 
-  // Arrastar barra de progresso da linha do tempo
+  // Arrastar barra de progresso / scrubber
   const handleSeek = (e) => {
     const newTime = parseFloat(e.target.value);
     setProgress(newTime);
-    Tone.Transport.seconds = newTime;
+    setToneTransportSeconds(newTime);
+  };
+
+  // Funções de interação da Timeline Waveform Scrubber (Ideia 3)
+  const computeWaveformTimeFromClientX = useCallback(
+    (clientX) => {
+      const el = waveformContainerRef.current;
+      if (!el || duration <= 0) return null;
+      const rect = el.getBoundingClientRect();
+      if (!rect.width) return null;
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      return {
+        ratio,
+        time: ratio * duration,
+      };
+    },
+    [duration]
+  );
+
+  const handleWaveformPointerMove = (e) => {
+    const info = computeWaveformTimeFromClientX(e.clientX);
+    if (!info) return;
+    setHoverPercent(info.ratio * 100);
+    setHoverTime(info.time);
+
+    if (isScrubbingWaveform && isLoaded) {
+      setToneTransportSeconds(info.time);
+      setProgress(info.time);
+    }
+  };
+
+  const handleWaveformPointerDown = (e) => {
+    if (!isLoaded || duration <= 0) return;
+    if (e.target?.closest('[data-marker-pin="true"]')) return;
+    const info = computeWaveformTimeFromClientX(e.clientX);
+    if (!info) return;
+    if (e.currentTarget.setPointerCapture) {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignora
+      }
+    }
+    setIsScrubbingWaveform(true);
+    setToneTransportSeconds(info.time);
+    setProgress(info.time);
+  };
+
+  const handleWaveformPointerUp = (e) => {
+    if (!isScrubbingWaveform) return;
+    if (e.currentTarget.releasePointerCapture) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignora
+      }
+    }
+    setIsScrubbingWaveform(false);
+  };
+
+  const handleWaveformPointerLeave = () => {
+    setHoverTime(null);
+    setIsScrubbingWaveform(false);
   };
 
   // Mudança de volume de um stem individual
-  const handleVolumeChange = (track, value) => {
-    const numericValue = parseFloat(value);
-    setVolumes(prev => ({ ...prev, [track]: numericValue }));
+  const handleVolumeChange = useCallback((track, value) => {
+    const numericValue = Math.max(0, Math.min(100, Math.round(parseFloat(value) || 0)));
+    setVolumes((prev) => ({ ...prev, [track]: numericValue }));
 
     if (players.current && players.current.has(track)) {
       const player = players.current.player(track);
-      player.volume.value = numericValue === 0
-        ? -Infinity
-        : 20 * Math.log10((numericValue / 100) * 0.5);
+      player.volume.value =
+        numericValue === 0 ? -Infinity : 20 * Math.log10((numericValue / 100) * 0.5);
     }
-  };
+  }, []);
 
   // Alternar Mute individual
-  const toggleMute = (track) => {
-    setMutes(prev => {
-      const nextMutes = { ...prev, [track]: !prev[track] };
-      applyAudioRouting(nextMutes, solos);
-      return nextMutes;
-    });
-  };
+  const toggleMute = useCallback(
+    (track) => {
+      setActiveMixPreset('custom');
+      setMutes((prev) => {
+        const nextMutes = { ...prev, [track]: !prev[track] };
+        applyAudioRouting(nextMutes, solos);
+        return nextMutes;
+      });
+    },
+    [applyAudioRouting, solos]
+  );
 
   // Alternar Solo individual
-  const toggleSolo = (track) => {
-    setSolos(prev => {
-      const nextSolos = { ...prev, [track]: !prev[track] };
-      applyAudioRouting(mutes, nextSolos);
-      return nextSolos;
-    });
-  };
+  const toggleSolo = useCallback(
+    (track) => {
+      setActiveMixPreset('custom');
+      setSolos((prev) => {
+        const nextSolos = { ...prev, [track]: !prev[track] };
+        applyAudioRouting(mutes, nextSolos);
+        return nextSolos;
+      });
+    },
+    [applyAudioRouting, mutes]
+  );
 
   // Controle de Master Volume
   const handleMasterVolumeChange = (value) => {
-    const numericValue = parseFloat(value);
+    const numericValue = Math.max(0, Math.min(100, Math.round(parseFloat(value) || 0)));
     setMasterVolume(numericValue);
     setIsMasterMuted(numericValue === 0);
 
-    if (Tone.Destination) {
-      Tone.Destination.volume.value = numericValue === 0
-        ? -Infinity
-        : 20 * Math.log10(numericValue / 100);
-    }
+    setToneDestinationDb(
+      numericValue === 0 ? -Infinity : 20 * Math.log10(numericValue / 100)
+    );
   };
 
   // Alternar Mute Master
@@ -511,7 +906,7 @@ const Mixer = () => {
     setPlaybackSpeed(clamped);
 
     if (players.current) {
-      STEM_KEYS.forEach(track => {
+      STEM_KEYS.forEach((track) => {
         if (players.current.has(track)) {
           players.current.player(track).playbackRate = clamped;
         }
@@ -530,9 +925,7 @@ const Mixer = () => {
     setLoopA(target);
     if (loopB !== null && loopB > target) {
       setIsLooping(true);
-      Tone.Transport.loopStart = target;
-      Tone.Transport.loopEnd = loopB;
-      Tone.Transport.loop = true;
+      configureToneTransportLoop(true, target, loopB);
     }
   };
 
@@ -541,9 +934,7 @@ const Mixer = () => {
     setLoopB(target);
     if (loopA !== null && target > loopA) {
       setIsLooping(true);
-      Tone.Transport.loopStart = loopA;
-      Tone.Transport.loopEnd = target;
-      Tone.Transport.loop = true;
+      configureToneTransportLoop(true, loopA, target);
     }
   };
 
@@ -554,20 +945,16 @@ const Mixer = () => {
       setLoopA(start);
       setLoopB(end);
       setIsLooping(true);
-      Tone.Transport.loopStart = start;
-      Tone.Transport.loopEnd = end;
-      Tone.Transport.loop = true;
+      configureToneTransportLoop(true, start, end);
       return;
     }
 
     const next = !isLooping;
     setIsLooping(next);
-    Tone.Transport.loop = next;
+    configureToneTransportLoop(next, loopA, loopB);
     if (next) {
-      Tone.Transport.loopStart = loopA;
-      Tone.Transport.loopEnd = loopB;
       if (Tone.Transport.seconds < loopA || Tone.Transport.seconds > loopB) {
-        Tone.Transport.seconds = loopA;
+        setToneTransportSeconds(loopA);
         setProgress(loopA);
       }
     }
@@ -577,82 +964,48 @@ const Mixer = () => {
     setLoopA(null);
     setLoopB(null);
     setIsLooping(false);
-    Tone.Transport.loop = false;
+    configureToneTransportLoop(false);
   };
 
   // --- STUDIO PRACTICE SUITE: MARCADORES DE TREINO PERSISTENTES ---
   useEffect(() => {
     if (!song?.id) return;
     const storageKey = `easycovers_markers_${song.id}`;
-    let loaded = [];
-    try {
-      const local = localStorage.getItem(storageKey);
-      if (local) {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) loaded = parsed;
-      }
-    } catch (e) {
-      console.warn("Erro ao ler marcadores locais:", e);
-    }
 
-    if (loaded.length === 0 && song.practice_markers) {
-      try {
-        const parsed = typeof song.practice_markers === 'string'
-          ? JSON.parse(song.practice_markers)
-          : song.practice_markers;
-        if (Array.isArray(parsed)) loaded = parsed;
-      } catch (e) {
-        console.warn("Erro ao ler marcadores do banco:", e);
-      }
-    }
-
-    setPracticeMarkers(loaded);
-
-    // Sincroniza em background com o backend
     fetch(`http://localhost:8000/songs/${song.id}/markers`)
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
         if (data?.markers && Array.isArray(data.markers) && data.markers.length > 0) {
           setPracticeMarkers(data.markers);
           localStorage.setItem(storageKey, JSON.stringify(data.markers));
         }
       })
       .catch(() => {});
-  }, [song?.id, song?.practice_markers]);
+  }, [song?.id]);
 
   const handleApplyMarker = useCallback((marker) => {
     setLoopA(marker.start);
     setLoopB(marker.end);
     setIsLooping(true);
-    Tone.Transport.loopStart = marker.start;
-    Tone.Transport.loopEnd = marker.end;
-    Tone.Transport.loop = true;
-    Tone.Transport.seconds = marker.start;
+    configureToneTransportLoop(true, marker.start, marker.end);
+    setToneTransportSeconds(marker.start);
     setProgress(marker.start);
   }, []);
 
-  // Engatilha marcador inicial vindo do Dashboard se aplicável
-  useEffect(() => {
-    const initial = location.state?.initialMarker;
-    if (initial && isLoaded) {
-      handleApplyMarker(initial);
-    }
-  }, [isLoaded, location.state, handleApplyMarker]);
-
   const handleSaveMarker = () => {
     if (loopA === null || loopB === null || loopB <= loopA) {
-      alert("Defina os pontos A e B na timeline antes de salvar o trecho de treino.");
+      alert('Defina os pontos A e B na timeline antes de salvar o trecho de treino.');
       return;
     }
     const name = newMarkerName.trim() || `Trecho ${practiceMarkers.length + 1}`;
-    const colors = ["#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#06b6d4"];
+    const colors = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#06b6d4'];
     const randomColor = colors[practiceMarkers.length % colors.length];
     const newMarker = {
       id: 'pm_' + Date.now(),
       name,
       start: Math.min(loopA, loopB),
       end: Math.max(loopA, loopB),
-      color: randomColor
+      color: randomColor,
     };
     const updated = [...practiceMarkers, newMarker];
     setPracticeMarkers(updated);
@@ -663,36 +1016,70 @@ const Mixer = () => {
     fetch(`http://localhost:8000/songs/${song.id}/markers`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markers: updated })
-    }).catch(err => console.warn("Erro ao salvar marcadores no backend:", err));
+      body: JSON.stringify({ markers: updated }),
+    }).catch((err) => console.warn('Erro ao salvar marcadores no backend:', err));
   };
 
   const handleDeleteMarker = (markerId, e) => {
     e.stopPropagation();
-    const updated = practiceMarkers.filter(m => m.id !== markerId);
+    const updated = practiceMarkers.filter((m) => m.id !== markerId);
     setPracticeMarkers(updated);
     localStorage.setItem(`easycovers_markers_${song.id}`, JSON.stringify(updated));
     fetch(`http://localhost:8000/songs/${song.id}/markers`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markers: updated })
-    }).catch(err => console.warn("Erro ao atualizar marcadores no backend:", err));
+      body: JSON.stringify({ markers: updated }),
+    }).catch((err) => console.warn('Erro ao atualizar marcadores no backend:', err));
   };
 
-  // Presets de Estúdio: "Backing Track" (muta o instrumento do usuário)
-  const handleBackingTrackPreset = () => {
-    const instrument = (song?.instrument || "").toLowerCase();
-    let targetStem = null;
+  // =========================================================================
+  // 5 PRESETS RÁPIDOS DE MIXAGEM (IDEIA 2)
+  // =========================================================================
+  const handleResetVolumes = useCallback(() => {
+    const defaultVol = {
+      vocals: 80,
+      drums: 80,
+      bass: 80,
+      other: 80,
+      guitar: 80,
+      piano: 80,
+    };
+    const defaultMute = {
+      vocals: false,
+      drums: false,
+      bass: false,
+      other: false,
+      guitar: false,
+      piano: false,
+    };
+    const defaultSolo = {
+      vocals: false,
+      drums: false,
+      bass: false,
+      other: false,
+      guitar: false,
+      piano: false,
+    };
 
-    if (instrument.includes("guitar") || instrument.includes("violão")) targetStem = "guitar";
-    else if (instrument.includes("voz") || instrument.includes("vocal") || instrument.includes("canto")) targetStem = "vocals";
-    else if (instrument.includes("baixo")) targetStem = "bass";
-    else if (instrument.includes("bateria")) targetStem = "drums";
-    else if (instrument.includes("teclado") || instrument.includes("piano")) targetStem = "piano";
+    setActiveMixPreset('full');
+    setVolumes(defaultVol);
+    setMutes(defaultMute);
+    setSolos(defaultSolo);
 
-    if (!targetStem) {
-      targetStem = "guitar"; // Fallback padrão
-    }
+    STEM_KEYS.forEach((track) => handleVolumeChange(track, 80));
+    applyAudioRouting(defaultMute, defaultSolo);
+  }, [applyAudioRouting, handleVolumeChange]);
+
+  const handleBackingTrackPreset = useCallback(() => {
+    const instrument = (song?.instrument || '').toLowerCase();
+    let targetStem = 'guitar';
+
+    if (instrument.includes('guitar') || instrument.includes('violão')) targetStem = 'guitar';
+    else if (instrument.includes('voz') || instrument.includes('vocal') || instrument.includes('canto'))
+      targetStem = 'vocals';
+    else if (instrument.includes('baixo')) targetStem = 'bass';
+    else if (instrument.includes('bateria')) targetStem = 'drums';
+    else if (instrument.includes('teclado') || instrument.includes('piano')) targetStem = 'piano';
 
     const nextMutes = {
       vocals: targetStem === 'vocals',
@@ -702,27 +1089,93 @@ const Mixer = () => {
       guitar: targetStem === 'guitar',
       piano: targetStem === 'piano',
     };
+    const nextSolos = {
+      vocals: false,
+      drums: false,
+      bass: false,
+      other: false,
+      guitar: false,
+      piano: false,
+    };
 
+    setActiveMixPreset('backing');
     setMutes(nextMutes);
-    setSolos({ vocals: false, drums: false, bass: false, other: false, guitar: false, piano: false });
-    applyAudioRouting(nextMutes, { vocals: false, drums: false, bass: false, other: false, guitar: false, piano: false });
-  };
+    setSolos(nextSolos);
+    applyAudioRouting(nextMutes, nextSolos);
+  }, [song?.instrument, applyAudioRouting]);
 
-  // Reset de todos os níveis para 80% e desmutar tudo
-  const handleResetVolumes = () => {
-    const defaultVol = { vocals: 80, drums: 80, bass: 80, other: 80, guitar: 80, piano: 80 };
-    const defaultMute = { vocals: false, drums: false, bass: false, other: false, guitar: false, piano: false };
-    const defaultSolo = { vocals: false, drums: false, bass: false, other: false, guitar: false, piano: false };
+  const handleKaraokePreset = useCallback(() => {
+    const nextMutes = {
+      vocals: true,
+      drums: false,
+      bass: false,
+      other: false,
+      guitar: false,
+      piano: false,
+    };
+    const nextSolos = {
+      vocals: false,
+      drums: false,
+      bass: false,
+      other: false,
+      guitar: false,
+      piano: false,
+    };
+    setActiveMixPreset('karaoke');
+    setMutes(nextMutes);
+    setSolos(nextSolos);
+    applyAudioRouting(nextMutes, nextSolos);
+  }, [applyAudioRouting]);
 
-    setVolumes(defaultVol);
-    setMutes(defaultMute);
-    setSolos(defaultSolo);
+  const handleRhythmSectionPreset = useCallback(() => {
+    const nextMutes = {
+      vocals: false,
+      drums: false,
+      bass: false,
+      other: false,
+      guitar: false,
+      piano: false,
+    };
+    const nextSolos = {
+      vocals: false,
+      drums: true,
+      bass: true,
+      other: false,
+      guitar: false,
+      piano: false,
+    };
+    setActiveMixPreset('rhythm');
+    setMutes(nextMutes);
+    setSolos(nextSolos);
+    applyAudioRouting(nextMutes, nextSolos);
+  }, [applyAudioRouting]);
 
-    STEM_KEYS.forEach(track => handleVolumeChange(track, 80));
-    applyAudioRouting(defaultMute, defaultSolo);
-  };
+  const handleHarmonyPreset = useCallback(() => {
+    const nextMutes = {
+      vocals: false,
+      drums: false,
+      bass: false,
+      other: false,
+      guitar: false,
+      piano: false,
+    };
+    const nextSolos = {
+      vocals: false,
+      drums: false,
+      bass: false,
+      other: false,
+      guitar: true,
+      piano: true,
+    };
+    setActiveMixPreset('harmony');
+    setMutes(nextMutes);
+    setSolos(nextSolos);
+    applyAudioRouting(nextMutes, nextSolos);
+  }, [applyAudioRouting]);
 
-  // Atalhos de teclado profissionais (Espaço, Setas, M, R, [, ], L)
+  // =========================================================================
+  // ATALHOS DE TECLADO COMPLETOS DE CONSOLE (IDEIA 6: ESPAÇO, SETAS, M, R, [, ], L, 1..6, SHIFT+1..6)
+  // =========================================================================
   const handlersRef = useRef({});
 
   useEffect(() => {
@@ -733,13 +1186,31 @@ const Mixer = () => {
       handleRestart,
       handleSetLoopA,
       handleSetLoopB,
-      toggleLooping
+      toggleLooping,
+      toggleMute,
+      toggleSolo,
     };
   });
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return;
+
+      // Atalhos 1 a 6 para Mute (ou Shift + 1..6 para Solo)
+      const digitMatch = /^(?:Digit|Numpad)([1-6])$/.exec(e.code);
+      if (digitMatch) {
+        e.preventDefault();
+        const channelIndex = parseInt(digitMatch[1], 10) - 1;
+        const targetTrack = STEM_KEYS[channelIndex];
+        if (targetTrack) {
+          if (e.shiftKey) {
+            handlersRef.current.toggleSolo?.(targetTrack);
+          } else {
+            handlersRef.current.toggleMute?.(targetTrack);
+          }
+        }
+        return;
+      }
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -772,57 +1243,109 @@ const Mixer = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const progressPercent = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
 
-  const hasAnySolo = Object.values(solos).some(Boolean);
+  // Objeto de contexto para iluminar o DashboardStudioBackground quando o áudio está tocando ou canal em foco
+  const backgroundFocusSong = useMemo(() => {
+    if (isPlaying || hasAnySolo || hoveredStem) {
+      return {
+        name: hoveredStem ? `${STEM_CONFIG[hoveredStem]?.label} • ${song?.name || ''}` : song?.name,
+        genre: song?.genre || 'STUDIO 6-STEMS',
+      };
+    }
+    return null;
+  }, [isPlaying, hasAnySolo, hoveredStem, song?.name, song?.genre]);
 
   return (
     <div
-      className="font-sans min-h-screen bg-repeat flex flex-col"
+      ref={mixerRootRef}
+      className={`font-sans min-h-screen bg-repeat flex flex-col text-slate-800 dark:text-slate-100 selection:bg-[var(--color-brand-medium)] selection:text-white relative overflow-x-hidden ${
+        !isTabVisible ? 'animations-paused' : ''
+      }`}
       style={{
         backgroundImage: "url('/assets/dashboard_bg.jpg')",
-        backgroundSize: "320px 320px",
-        backgroundColor: "var(--color-brand-light)"
+        backgroundSize: '320px 320px',
+        backgroundColor: 'var(--color-brand-light)',
+        '--level-vocals': 0,
+        '--level-drums': 0,
+        '--level-bass': 0,
+        '--level-other': 0,
+        '--level-guitar': 0,
+        '--level-piano': 0,
+        '--level-master-l': 0,
+        '--level-master-r': 0,
+        '--vu-angle-l': '-36deg',
+        '--vu-angle-r': '-36deg',
       }}
     >
-      {/* HEADER PADRONIZADO EASYCOVERS */}
-      <header className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-md border-b border-slate-200/80 dark:border-slate-800 px-6 md:px-8 py-3 flex justify-between items-center sticky top-0 z-30 transition-all">
+      {/* ========================================================================= */}
+      {/* 0. SALA DE CONTROLE PARALLAX 3D REATIVA AO ÁUDIO E SOLOS                  */}
+      {/* ========================================================================= */}
+      <DashboardStudioBackground
+        studioLiveMode={studioLiveMode}
+        phantomPower={phantomPower}
+        hoveredSong={backgroundFocusSong}
+      />
+
+      {/* ========================================================================= */}
+      {/* HEADER STICKY STUDIO (LOGO + BADGE CONSOLE 6-STEMS + ENGINE 44.1KHZ)      */}
+      {/* ========================================================================= */}
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-40">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div 
-            onClick={() => navigate('/dashboard')}
+          <div
+            onClick={() => {
+              setIsPlaying(false);
+              Tone.Transport.stop();
+              navigate('/dashboard');
+            }}
             className="flex items-center gap-3 cursor-pointer group"
-            title="EasyCovers - Ir para o início"
+            title="EasyCovers - Voltar à Biblioteca"
           >
             <img
               src="/assets/logo_symbol.png"
               alt="EasyCovers Logo"
-              className="h-10 md:h-12 w-auto object-contain drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
+              className="h-10 md:h-11 w-auto object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
             />
             <div>
-              <h1 className="text-xl md:text-2xl font-extrabold text-[var(--color-brand-deep)] leading-tight">
-                EasyCovers
-              </h1>
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline-block">
-                AI Audio Stem Separation Studio • Console de Mixagem
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl md:text-2xl font-black text-[var(--color-brand-deep)] tracking-tight leading-none">
+                  EasyCovers
+                </h1>
+                <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-wider bg-blue-500/10 text-[var(--color-brand-medium)] dark:text-blue-400 border border-blue-500/20">
+                  CONSOLE 6-STEMS
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold hidden sm:inline-block mt-0.5">
+                Master DAW Control Room • Web Audio API
               </span>
             </div>
           </div>
 
-          {/* Botão de Alternância On/Off de Modo Escuro / Claro */}
           <ThemeToggle />
         </div>
 
-        {/* Status da Engine & Botão Voltar */}
-        <div className="flex items-center gap-4">
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-xs font-semibold text-[var(--color-brand-deep)]">
+        {/* Status da Engine 44.1 kHz & Botão Voltar */}
+        <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 text-xs font-mono font-bold tabular-nums">
             {!isLoaded ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                <span className="text-amber-700 dark:text-amber-400">Decodificando Stems WAV...</span>
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                <span className="text-amber-700 dark:text-amber-400">
+                  DECODIFICANDO STEMS WAV...
+                </span>
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span className="text-emerald-700 dark:text-emerald-400">Engine Pronta (44.1 kHz Estéreo)</span>
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isPlaying
+                      ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]'
+                      : 'bg-emerald-500'
+                  }`}
+                />
+                <span className="text-emerald-700 dark:text-emerald-400">
+                  ENGINE 44.1 kHz • 32-BIT FLOAT
+                </span>
               </>
             )}
           </div>
@@ -834,342 +1357,928 @@ const Mixer = () => {
               Tone.Transport.stop();
               navigate('/dashboard');
             }}
-            className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 px-4 py-2 rounded-xl transition border border-gray-200 dark:border-slate-700 shadow-xs"
+            className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200 hover:text-[var(--color-brand-medium)] dark:hover:text-blue-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 px-3.5 py-2 rounded-xl border border-slate-200/90 dark:border-slate-700 shadow-2xs studio-btn-transition active:scale-95 cursor-pointer"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2.5}
+              stroke="currentColor"
+              className="w-4 h-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+              />
             </svg>
             <span>Voltar à Biblioteca</span>
           </button>
         </div>
       </header>
 
-      {/* ÁREA PRINCIPAL DO ESTÚDIO */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 my-4 flex flex-col gap-6">
-
-        {/* 1. CABEÇALHO DO PROJETO COM DETALHES DA MÚSICA & AFINAÇÃO */}
-        <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border border-white/60 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          <div className="flex items-center gap-5 w-full lg:w-auto">
-            {/* Vinil decorativo com capa centralizada */}
-            <div className="relative flex items-center shrink-0">
-              {/* Disco de Vinil que projeta e gira com o áudio tocando */}
-              <div
-                className={`hidden sm:flex absolute left-4 w-20 h-20 md:w-24 md:h-24 rounded-full bg-slate-900 border-4 border-slate-800 shadow-xl transition-all duration-500 items-center justify-center ${
-                  isPlaying ? 'translate-x-7 md:translate-x-8 animate-[spin_4s_linear_infinite]' : 'translate-x-2'
-                }`}
-              >
-                {/* Ranhuras do vinil */}
-                <div className="w-14 h-14 rounded-full border border-slate-700/50 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--color-brand-medium)] to-indigo-600 border-2 border-white/20 flex items-center justify-center shadow-inner">
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-900"></div>
+      {/* ========================================================================= */}
+      {/* ÁREA PRINCIPAL DO ESTÚDIO DE MIXAGEM (Z-10 ACIMA DO PARALLAX 3D)          */}
+      {/* ========================================================================= */}
+      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-5 flex flex-col gap-5">
+        {/* ===================================================================== */}
+        {/* 1. HERO MASTER DECK + MIXER MASTER RACK 2.5D/SVG (IDEIA 4)            */}
+        {/* ===================================================================== */}
+        <section className="rounded-3xl p-2 bg-gradient-to-b from-white/85 via-white/70 to-blue-100/50 dark:from-slate-800/90 dark:via-slate-900/90 dark:to-slate-950/90 border border-slate-200/90 dark:border-slate-700/80 shadow-2xl backdrop-blur-xl">
+          <div className="rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6">
+            {/* Identidade da Faixa & Disco de Vinil 3D */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 flex-1 min-w-0">
+              <div className="relative flex items-center shrink-0 pr-5">
+                {/* Disco de Vinil que projeta e gira quando o áudio está tocando */}
+                <div
+                  className={`hidden sm:flex absolute left-6 w-22 h-22 md:w-26 md:h-26 rounded-full bg-slate-950 border-4 border-slate-800 shadow-xl items-center justify-center transition-transform duration-500 ${
+                    isPlaying
+                      ? 'translate-x-7 md:translate-x-8 animate-[spin_4s_linear_infinite]'
+                      : 'translate-x-2'
+                  }`}
+                  aria-hidden="true"
+                >
+                  <div className="w-16 h-16 rounded-full border border-slate-700/60 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[var(--color-brand-medium)] to-amber-500 border-2 border-white/25 flex items-center justify-center shadow-inner">
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-950" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Capa Principal: Capa da API ou Imagem do Estilo Musical (inserção manual) */}
-              <div className="relative z-10 w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shadow-lg border-2 border-[var(--color-brand-light)] bg-gradient-to-br from-blue-600 to-[var(--color-brand-deep)] flex items-center justify-center shrink-0">
-                <img
-                  src={song?.cover_image_url || getGenreImage(song?.genre)}
-                  alt="Track Cover"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.src = getGenreImage(song?.genre); }}
-                />
-              </div>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-slate-100 leading-tight truncate">
-                  {song?.name || "Música sem título"}
-                </h2>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-600">
-                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                  </svg>
-                  <span>6 Stems Isolados</span>
-                </span>
-              </div>
-
-              <p className="text-base md:text-lg text-gray-600 dark:text-slate-300 font-medium truncate">
-                Artista: <span className="font-bold text-[var(--color-brand-deep)]">{song?.artist || "Desconhecido"}</span>
-              </p>
-
-              <div className="flex flex-wrap items-center gap-2 mt-2.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 text-xs font-bold rounded-lg uppercase tracking-wider border border-gray-200 dark:border-slate-700">
-                  <img src="/assets/icons/icon_genre_disc.png" alt="" className="w-4 h-4 object-contain" />
-                  <span>{song?.genre || "Gênero Geral"}</span>
-                </span>
-                {song?.instrument && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-brand-light)] text-[var(--color-brand-deep)] text-xs font-bold rounded-lg uppercase tracking-wider border border-blue-200 dark:border-blue-900/50">
-                    <img src="/assets/icons/icon_instrument_pick.png" alt="" className="w-4 h-4 object-contain" />
-                    <span>{song.instrument}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Módulo de Transposição Harmônica (Pitch Shifting) */}
-          <div className="w-full lg:w-auto bg-slate-50/90 dark:bg-slate-800/80 p-4 md:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-3 shrink-0 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="text-left lg:text-right">
-                <span className="text-[11px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider block">
-                  Afinação Harmônica
-                </span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-gray-500 dark:text-slate-400">Tom Original: <strong className="text-gray-800 dark:text-slate-200">{originalKey}</strong></span>
-                  <span className="text-gray-300 dark:text-slate-600">•</span>
-                  <span className="text-sm font-black text-[var(--color-brand-medium)] dark:text-blue-400">
-                    Atual: {currentKey}
-                  </span>
+                {/* Capa Oficial do Álbum / Gênero */}
+                <div className="relative z-10 w-22 h-22 md:w-26 md:h-26 rounded-2xl overflow-hidden shadow-xl studio-img-outline bg-gradient-to-br from-blue-600 to-[var(--color-brand-deep)] shrink-0">
+                  <img
+                    src={song?.cover_image_url || getGenreImage(song?.genre)}
+                    alt={`Capa de ${song?.name || 'Música'}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = getGenreImage(song?.genre);
+                    }}
+                  />
                 </div>
               </div>
 
-              {currentPitch !== 0 && (
-                <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                  {currentPitch > 0 ? `+${currentPitch}` : currentPitch} st
-                </span>
-              )}
+              <div className="min-w-0 flex-1">
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/70 border border-blue-200/80 dark:border-blue-800/70 text-[10px] font-mono font-extrabold uppercase tracking-wider text-[var(--color-brand-medium)] dark:text-blue-400 mb-2">
+                  <HeadphonesStudioIcon className="w-3.5 h-3.5" />
+                  <span>SESSÃO MULTIFAIXA ATIVA • 6 CANAIS ISOLADOS</span>
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight truncate text-balance">
+                  {song?.name || 'Música sem título'}
+                </h2>
+
+                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-semibold truncate mt-0.5">
+                  Artista:{' '}
+                  <span className="font-extrabold text-[var(--color-brand-deep)] dark:text-blue-300">
+                    {song?.artist || 'Artista Desconhecido'}
+                  </span>
+                </p>
+
+                {/* Badges Técnicas da Sessão */}
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200/90 dark:border-slate-700">
+                    <img
+                      src="/assets/icons/icon_genre_disc.png"
+                      alt=""
+                      className="w-3.5 h-3.5 object-contain"
+                    />
+                    <span>{song?.genre || 'Gênero Geral'}</span>
+                  </span>
+
+                  {song?.instrument && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-[var(--color-brand-deep)] dark:text-blue-300 text-xs font-bold rounded-xl border border-blue-200/80 dark:border-blue-800/70">
+                      <img
+                        src="/assets/icons/icon_instrument_pick.png"
+                        alt=""
+                        className="w-3.5 h-3.5 object-contain"
+                      />
+                      <span>Foco: {song.instrument}</span>
+                    </span>
+                  )}
+
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-xs font-mono font-bold rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 tabular-nums">
+                    <span>TOM: {currentKey}</span>
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => changePitch(-1)}
-                disabled={currentPitch <= -12}
-                title="Diminuir 1 semitom"
-                className="px-3 py-1.5 bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 disabled:opacity-50 text-gray-700 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-300 dark:border-slate-600 shadow-xs transition active:scale-95"
-              >
-                - Semitom
-              </button>
+            {/* Hardware Master Rack 2.5D/SVG (Válvulas, VU Meters L/R, OLED e 3 Knobs) */}
+            <MixerMasterRack
+              isPlaying={isPlaying}
+              progress={progress}
+              duration={duration}
+              originalKey={originalKey}
+              currentKey={currentKey}
+              currentPitch={currentPitch}
+              onChangePitch={changePitch}
+              onResetPitch={resetPitch}
+              playbackSpeed={playbackSpeed}
+              onSpeedChange={handleSpeedChange}
+              masterVolume={masterVolume}
+              isMasterMuted={isMasterMuted}
+              onMasterVolumeChange={handleMasterVolumeChange}
+              onToggleMasterMute={toggleMasterMute}
+              consoleMode={consoleMode}
+              onToggleConsoleMode={setConsoleMode}
+              studioLiveMode={studioLiveMode}
+              onToggleStudioLive={() => setStudioLiveMode((v) => !v)}
+              phantomPower={phantomPower}
+              onTogglePhantomPower={() => setPhantomPower((p) => !p)}
+            />
+          </div>
+        </section>
 
-              {currentPitch !== 0 && (
+        {/* ===================================================================== */}
+        {/* 2. DECK DE TRANSPORTE 3D + TIMELINE WAVEFORM SCRUBBER (IDEIAS 3 & 5)  */}
+        {/* ===================================================================== */}
+        <section className="relative rounded-3xl p-2 bg-gradient-to-b from-white/85 via-white/70 to-blue-100/50 dark:from-slate-800/90 dark:via-slate-900/90 dark:to-slate-950/90 border border-slate-200/90 dark:border-slate-700/80 shadow-xl backdrop-blur-xl">
+          <div className="relative rounded-2xl bg-white/95 dark:bg-[#0B1325]/95 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 flex flex-col gap-5 overflow-hidden">
+            {/* HUD DE METRÔNOMO DE ESTÚDIO 3D (COUNT-IN 4 TEMPOS — IDEIA 5) */}
+            {countInNumber !== null && (
+              <div className="absolute inset-0 bg-[#0B1325]/92 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center z-30 p-4 select-none">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-mono font-extrabold uppercase tracking-widest mb-3">
+                  <MetronomeIcon className="w-4 h-4 text-amber-400" />
+                  <span>STUDIO PRE-ROLL METRONOME • PREPARE-SE</span>
+                </div>
+
+                {/* 4 Pads Luminosos de Tempo (BEAT 1, BEAT 2, BEAT 3, BEAT 4 — GO!) */}
+                <div className="grid grid-cols-4 gap-2.5 sm:gap-4 w-full max-w-lg mb-4">
+                  {[
+                    { beat: 1, num: 4, label: 'BEAT 1', freq: '800Hz' },
+                    { beat: 2, num: 3, label: 'BEAT 2', freq: '800Hz' },
+                    { beat: 3, num: 2, label: 'BEAT 3', freq: '800Hz' },
+                    { beat: 4, num: 1, label: 'BEAT 4 • GO!', freq: '1.2kHz' },
+                  ].map((item) => {
+                    const isActiveBeat = countInNumber === item.num;
+                    const isPassedBeat = countInNumber < item.num;
+                    const isFinalBeat = item.beat === 4;
+
+                    return (
+                      <div
+                        key={item.beat}
+                        className={`rounded-xl p-3 border-2 flex flex-col items-center justify-center font-mono tabular-nums studio-card-transition ${
+                          isActiveBeat
+                            ? isFinalBeat
+                              ? 'bg-emerald-500/25 border-emerald-400 text-white scale-105 shadow-[0_0_24px_rgba(16,185,129,0.5)]'
+                              : 'bg-amber-500/25 border-amber-400 text-white scale-105 shadow-[0_0_24px_rgba(245,158,11,0.5)]'
+                            : isPassedBeat
+                            ? 'bg-slate-900/90 border-amber-500/40 text-amber-300/70'
+                            : 'bg-slate-900/60 border-slate-800 text-slate-500'
+                        }`}
+                      >
+                        <span className="text-[10px] font-black tracking-wider">
+                          {item.label}
+                        </span>
+                        <span className="text-2xl sm:text-3xl font-black my-1">
+                          {item.beat}
+                        </span>
+                        <span className="text-[9px] opacity-75">{item.freq}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <span className="text-xs text-slate-300 font-semibold">
+                  Posicione as mãos no instrumento — entrada automática no próximo compasso!
+                </span>
+              </div>
+            )}
+
+            {/* Linha Superior do Deck de Transporte: Controles Ópticos + Ações Rápidas */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              {/* Esquerda: Telemetria de Posição & Estado */}
+              <div className="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-start">
+                <div className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 font-mono tabular-nums">
+                  <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                    TIMECODE ATUAL
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                      {formatTime(progress)}
+                    </span>
+                    <span className="text-xs font-bold text-slate-400">
+                      / {formatTime(duration)}
+                    </span>
+                  </div>
+                </div>
+
+                {duration > 0 && (
+                  <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-800 font-mono tabular-nums">
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      RESTANTE
+                    </span>
+                    <span className="text-sm font-extrabold text-slate-600 dark:text-slate-300">
+                      -{formatTime(Math.max(0, duration - progress))}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Centro: Transporte Principal (Restart, -5s, Play/Pause 3D, +5s) */}
+              <div className="flex items-center gap-3 sm:gap-5">
                 <button
                   type="button"
-                  onClick={resetPitch}
-                  title="Restaurar afinação original"
-                  className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-extrabold text-xs rounded-xl border border-amber-200 dark:border-amber-800 transition active:scale-95"
+                  onClick={handleRestart}
+                  disabled={!isLoaded}
+                  title="Voltar ao início da faixa (Atalho: R)"
+                  className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-800 disabled:opacity-40 studio-btn-transition active:scale-95 cursor-pointer"
                 >
-                  Reset (0)
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path d="M9.195 18.44c1.25.714 2.805-.189 2.805-1.629v-2.34l6.945 3.968c1.25.715 2.805-.188 2.805-1.628V7.19c0-1.44-1.555-2.343-2.805-1.628L12 9.529v-2.34c0-1.44-1.555-2.343-2.805-1.628L2.25 9.53c-1.25.714-1.25 2.54 0 3.255l6.945 5.655z" />
+                  </svg>
                 </button>
-              )}
 
-              <button
-                type="button"
-                onClick={() => changePitch(1)}
-                disabled={currentPitch >= 12}
-                title="Aumentar 1 semitom"
-                className="px-3 py-1.5 bg-[var(--color-brand-medium)] hover:bg-[var(--color-brand-dark)] disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95"
+                <button
+                  type="button"
+                  onClick={() => handleSeekDelta(-5)}
+                  disabled={!isLoaded}
+                  title="Retroceder 5 segundos (Seta Esquerda)"
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-mono font-black text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-40 rounded-xl border border-slate-200/90 dark:border-slate-800 studio-btn-transition active:scale-95 cursor-pointer tabular-nums"
+                >
+                  <img
+                    src="/assets/icons/icon_seek_backward.png"
+                    alt=""
+                    className="w-4 h-4 object-contain opacity-80"
+                  />
+                  <span>-5s</span>
+                </button>
+
+                {/* Botão Play / Pause 3D Óptico (Ideia 5) */}
+                <PlayPauseButton
+                  isPlaying={isPlaying}
+                  isLoaded={isLoaded}
+                  togglePlay={togglePlay}
+                  size="large"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => handleSeekDelta(5)}
+                  disabled={!isLoaded}
+                  title="Avançar 5 segundos (Seta Direita)"
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-mono font-black text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-40 rounded-xl border border-slate-200/90 dark:border-slate-800 studio-btn-transition active:scale-95 cursor-pointer tabular-nums"
+                >
+                  <span>+5s</span>
+                  <img
+                    src="/assets/icons/icon_seek_forward.png"
+                    alt=""
+                    className="w-4 h-4 object-contain opacity-80"
+                  />
+                </button>
+              </div>
+
+              {/* Direita: Atalhos de Palco (Count-in 4 Tempos & Karaokê .LRC) */}
+              <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCountInEnabled((prev) => !prev)}
+                  aria-pressed={isCountInEnabled}
+                  title="Ativar contagem de 4 cliques de metrônomo antes de iniciar o playback"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold border studio-btn-transition active:scale-95 cursor-pointer ${
+                    isCountInEnabled
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_14px_rgba(245,158,11,0.35)]'
+                      : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-800 hover:border-amber-400/60'
+                  }`}
+                >
+                  <MetronomeIcon className="w-4 h-4" />
+                  <span>Count-in 4x: {isCountInEnabled ? 'ON' : 'OFF'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowLyrics((prev) => !prev)}
+                  aria-pressed={showLyrics}
+                  title="Abrir Palco Karaokê 3D com letra sincronizada"
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold border studio-btn-transition active:scale-95 cursor-pointer ${
+                    showLyrics
+                      ? 'bg-purple-600 text-white border-purple-400 shadow-[0_0_16px_rgba(147,51,234,0.45)]'
+                      : 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/80 hover:bg-purple-100 dark:hover:bg-purple-900/60'
+                  }`}
+                >
+                  <MicLyricsIcon className="w-4 h-4" />
+                  <span>Palco Karaokê</span>
+                  {lyricsData?.has_synced && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* ================================================================= */}
+            {/* TIMELINE "WAVEFORM SCRUBBER" INTERATIVA COM LOOP A-B & PINS       */}
+            {/* ================================================================= */}
+            <div className="flex flex-col gap-1.5 pt-1">
+              <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 px-1 tabular-nums">
+                <span className="flex items-center gap-1.5">
+                  <WaveformIcon className="w-3.5 h-3.5 text-[var(--color-brand-medium)] dark:text-blue-400" />
+                  <span>TIMELINE ACÚSTICA INTERATIVA • CLIQUE OU ARRASTE PARA SEEK</span>
+                </span>
+                <span>
+                  {hoverTime !== null
+                    ? `IR PARA: ${formatTime(hoverTime)}`
+                    : isLooping && loopA !== null && loopB !== null
+                    ? `LOOP A-B: ${formatTime(loopA)} → ${formatTime(loopB)}`
+                    : `${Math.round(progressPercent)}% CONCLUÍDO`}
+                </span>
+              </div>
+
+              <div
+                ref={waveformContainerRef}
+                onPointerMove={handleWaveformPointerMove}
+                onPointerDown={handleWaveformPointerDown}
+                onPointerUp={handleWaveformPointerUp}
+                onPointerCancel={handleWaveformPointerUp}
+                onPointerLeave={handleWaveformPointerLeave}
+                className={`relative h-20 sm:h-24 w-full rounded-2xl bg-slate-950 border border-slate-800 px-3 py-3 flex items-center select-none overflow-visible touch-none ${
+                  isLoaded ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+                }`}
               >
-                + Semitom
-              </button>
+                {/* Grade Técnica de Fundo do Scrubber */}
+                <div
+                  className="pointer-events-none absolute inset-0 rounded-2xl opacity-35 studio-grid-surface"
+                  aria-hidden="true"
+                />
+
+                {/* Região Sombreada do Loop A-B sob a Onda */}
+                {loopA !== null && loopB !== null && duration > 0 && (
+                  <div
+                    className={`pointer-events-none absolute inset-y-1 rounded-lg transition-colors ${
+                      isLooping
+                        ? 'bg-amber-500/20 border-x-2 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                        : 'bg-slate-500/15 border-x border-slate-500/50'
+                    }`}
+                    style={{
+                      left: `${Math.max(
+                        0,
+                        Math.min(100, (Math.min(loopA, loopB) / duration) * 100)
+                      )}%`,
+                      width: `${Math.max(
+                        0,
+                        Math.min(100, (Math.abs(loopB - loopA) / duration) * 100)
+                      )}%`,
+                    }}
+                  />
+                )}
+
+                {/* Flag Visual Ponto A */}
+                {loopA !== null && duration > 0 && (
+                  <div
+                    className="pointer-events-none absolute -top-2.5 -translate-x-1/2 z-20 flex flex-col items-center"
+                    style={{
+                      left: `${Math.max(0, Math.min(100, (loopA / duration) * 100))}%`,
+                    }}
+                  >
+                    <span className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded bg-amber-500 text-slate-950 shadow-md tabular-nums">
+                      A • {formatTime(loopA)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Flag Visual Ponto B */}
+                {loopB !== null && duration > 0 && (
+                  <div
+                    className="pointer-events-none absolute -top-2.5 -translate-x-1/2 z-20 flex flex-col items-center"
+                    style={{
+                      left: `${Math.max(0, Math.min(100, (loopB / duration) * 100))}%`,
+                    }}
+                  >
+                    <span className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded bg-amber-400 text-slate-950 shadow-md tabular-nums">
+                      B • {formatTime(loopB)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Pins Clicáveis de practiceMarkers sobre a Timeline */}
+                {duration > 0 &&
+                  practiceMarkers.map((marker) => {
+                    const leftPct = Math.max(
+                      1,
+                      Math.min(99, (marker.start / duration) * 100)
+                    );
+                    const isMarkerActive =
+                      isLooping && loopA === marker.start && loopB === marker.end;
+
+                    return (
+                      <button
+                        key={marker.id}
+                        type="button"
+                        data-marker-pin="true"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApplyMarker(marker);
+                        }}
+                        style={{
+                          left: `${leftPct}%`,
+                          borderColor: marker.color || '#f59e0b',
+                        }}
+                        title={`Ativar Loop "${marker.name}" (${formatTime(
+                          marker.start
+                        )} - ${formatTime(marker.end)})`}
+                        className={`absolute -bottom-2.5 -translate-x-1/2 z-20 px-2 py-0.5 rounded-full text-[9px] font-mono font-black border shadow-md studio-btn-transition active:scale-95 cursor-pointer flex items-center gap-1 tabular-nums ${
+                          isMarkerActive
+                            ? 'bg-amber-400 text-slate-950 scale-105'
+                            : 'bg-slate-900/95 text-slate-100 hover:bg-slate-800'
+                        }`}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: marker.color || '#f59e0b' }}
+                        />
+                        <span className="max-w-[90px] truncate">{marker.name}</span>
+                      </button>
+                    );
+                  })}
+
+                {/* Grade Densa de 72 Barras de Amplitude Acústica */}
+                <div
+                  className="relative z-10 w-full h-full flex items-center justify-between gap-[2px]"
+                  aria-hidden="true"
+                >
+                  {waveformBars.map((barHeight, idx) => {
+                    const barPct = ((idx + 0.5) / waveformBars.length) * 100;
+                    const isPlayed = barPct <= progressPercent;
+                    const isInLoop =
+                      loopA !== null &&
+                      loopB !== null &&
+                      duration > 0 &&
+                      barPct >= (Math.min(loopA, loopB) / duration) * 100 &&
+                      barPct <= (Math.max(loopA, loopB) / duration) * 100;
+                    const isHoveredBar =
+                      hoverTime !== null && Math.abs(barPct - hoverPercent) < 1.2;
+
+                    return (
+                      <span
+                        key={idx}
+                        className={`flex-1 rounded-full transition-colors duration-100 ${
+                          isHoveredBar
+                            ? 'bg-white shadow-[0_0_8px_#ffffff]'
+                            : isPlayed
+                            ? isInLoop && isLooping
+                              ? 'bg-gradient-to-t from-amber-500 via-amber-400 to-yellow-200'
+                              : 'bg-gradient-to-t from-blue-600 via-cyan-400 to-amber-300'
+                            : isInLoop
+                            ? 'bg-amber-500/45'
+                            : 'bg-slate-700/75 hover:bg-slate-600'
+                        }`}
+                        style={{
+                          height: `${barHeight}%`,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Agulha de Playhead Atual */}
+                <div
+                  className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-cyan-300 shadow-[0_0_10px_#67e8f9]"
+                  style={{ left: `${progressPercent}%` }}
+                  aria-hidden="true"
+                >
+                  <span className="absolute -top-1 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#67e8f9]" />
+                </div>
+
+                {/* Hover Timecode Guide (Cursor Vertical + Badge Flutuante MM:SS) */}
+                {hoverTime !== null && isLoaded && (
+                  <div
+                    className="pointer-events-none absolute inset-y-0 z-30 w-px bg-white/80"
+                    style={{ left: `${hoverPercent}%` }}
+                    aria-hidden="true"
+                  >
+                    <span className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded-md bg-slate-900 text-white border border-slate-600 text-[10px] font-mono font-black shadow-lg whitespace-nowrap tabular-nums">
+                      {formatTime(hoverTime)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Input Range Acessível para Leitores de Tela e Navegação por Teclado */}
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 100}
+                  step="0.1"
+                  value={progress}
+                  onChange={handleSeek}
+                  disabled={!isLoaded}
+                  aria-label="Linha do tempo da música"
+                  className="sr-only"
+                />
+              </div>
             </div>
           </div>
         </section>
 
-        {/* 2. PLAYER CENTRAL & TIMELINE ESTILO SPOTIFY / DAW */}
-        <section className="relative bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border-t-4 border-[var(--color-brand-medium)] border-x border-b border-slate-200/80 dark:border-slate-800 flex flex-col items-center gap-5 overflow-hidden">
-          
-          {/* Overlay de Contagem de Entrada (Count-in / Metrônomo Pre-Roll) */}
-          {countInNumber !== null && (
-            <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center z-30 transition-all animate-fade-in">
-              <span className="text-xs uppercase tracking-widest text-amber-400 font-extrabold mb-1">
-                Contagem de Entrada • Prepare-se!
-              </span>
-              <span className="text-7xl font-black text-white animate-pulse">
-                {countInNumber}
-              </span>
-              <span className="text-xs text-slate-300 font-medium mt-2">
-                Posicione as mãos no instrumento...
-              </span>
+        {/* BANNER DINÂMICO SE VOCAL ESTIVER MUTADO E KARAOKÊ FECHADO */}
+        {mutes.vocals &&
+          !showLyrics &&
+          (parsedLyrics.length > 0 || lyricsData?.plain_lyrics) && (
+            <div className="bg-gradient-to-r from-purple-950/90 via-indigo-950/90 to-slate-900/90 border border-purple-500/40 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0">
+                  <MicLyricsIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-purple-200">
+                    Canal de Vocais silenciado — Modo Vocalista detectado!
+                  </h4>
+                  <p className="text-xs text-purple-300/85">
+                    Você é a voz principal agora. Deseja abrir o Teleprompter Karaokê 3D sincronizado?
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowLyrics(true)}
+                className="bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl studio-btn-transition active:scale-95 shadow-md shrink-0 cursor-pointer"
+              >
+                Abrir Palco Karaokê 3D
+              </button>
             </div>
           )}
 
-          {/* Controles de Transporte (Rewind 5s, Play/Pause, Forward 5s, Restart) */}
-          <div className="flex items-center gap-4 md:gap-6">
-            <button
-              type="button"
-              onClick={handleRestart}
-              disabled={!isLoaded}
-              title="Voltar ao início (R)"
-              className="p-3 text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 disabled:opacity-40 transition active:scale-95 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                <path d="M9.195 18.44c1.25.714 2.805-.189 2.805-1.629v-2.34l6.945 3.968c1.25.715 2.805-.188 2.805-1.628V7.19c0-1.44-1.555-2.343-2.805-1.628L12 9.529v-2.34c0-1.44-1.555-2.343-2.805-1.628L2.25 9.53c-1.25.714-1.25 2.54 0 3.255l6.945 5.655z" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSeekDelta(-5)}
-              disabled={!isLoaded}
-              title="Voltar 5 segundos (Seta Esquerda)"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 dark:border-slate-700 shadow-xs cursor-pointer"
-            >
-              <img src="/assets/icons/icon_seek_backward.png" alt="" className="w-4 h-4 object-contain opacity-75" />
-              <span>-5s</span>
-            </button>
-
-            {/* BOTÃO PLAY / PAUSE PRINCIPAL */}
-            <div className="flex items-center justify-center mx-2">
-              <PlayPauseButton
-                isPlaying={isPlaying}
-                isLoaded={isLoaded}
-                togglePlay={togglePlay}
-                size="large"
+        {/* ===================================================================== */}
+        {/* 3. PALCO KARAOKÊ 3D ("SMOKED GLASS LYRIC TELEPROMPTER" — IDEIA 6)     */}
+        {/* ===================================================================== */}
+        {showLyrics && (
+          <section className="rounded-3xl p-1.5 bg-gradient-to-b from-purple-500/40 via-indigo-500/30 to-slate-900 border border-purple-500/40 shadow-2xl">
+            <div className="rounded-2xl bg-[#0B1325] text-white p-5 sm:p-7 flex flex-col gap-4 relative overflow-hidden">
+              {/* Iluminação Ambiente Violeta/Safira */}
+              <div
+                className="pointer-events-none absolute -top-20 left-1/4 w-96 h-48 rounded-full bg-purple-600/25 blur-3xl"
+                aria-hidden="true"
               />
+              <div
+                className="pointer-events-none absolute -bottom-20 right-1/4 w-96 h-48 rounded-full bg-blue-600/20 blur-3xl"
+                aria-hidden="true"
+              />
+
+              {/* Cabeçalho do Teleprompter com Medidor de Onda Vocal Reativo */}
+              <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-600/25 border border-purple-400/40 flex items-center justify-center text-purple-300 shadow-inner">
+                    <MicLyricsIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-black tracking-tight text-white">
+                        Smoked Glass Lyric Teleprompter
+                      </h3>
+                      {lyricsData?.has_synced && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          LRC SYNC ACTIVE
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Clique em qualquer verso ou badge de tempo para saltar imediatamente na faixa.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Medidor Vocal Reativo + Botão Minimizar */}
+                <div className="flex items-center gap-3 self-end sm:self-center">
+                  <div
+                    className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800"
+                    style={{ '--stem-level': 'var(--level-vocals, 0)' }}
+                  >
+                    <span className="text-[9px] font-mono font-bold text-purple-300 uppercase">
+                      VOCAL BUS
+                    </span>
+                    <div className="w-20 h-2 rounded-full bg-slate-900 overflow-hidden">
+                      <div className="w-full h-full bg-gradient-to-r from-purple-500 via-fuchsia-400 to-amber-300 studio-meter-fill-h" />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowLyrics(false)}
+                    className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 studio-btn-transition active:scale-95 cursor-pointer"
+                  >
+                    Fechar ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Corpo das Letras com Auto-Scroll e Badges de Timestamp */}
+              <div
+                ref={lyricsContainerRef}
+                className="relative z-10 max-h-80 md:max-h-96 overflow-y-auto px-3 sm:px-6 py-6 flex flex-col items-center gap-3 scroll-smooth"
+              >
+                {isLoadingLyrics ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
+                    <p className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider">
+                      Sincronizando timecodes LRCLIB...
+                    </p>
+                  </div>
+                ) : parsedLyrics.length > 0 ? (
+                  parsedLyrics.map((line, idx) => {
+                    const isActive = idx === activeLyricIndex;
+                    const isPast = idx < activeLyricIndex;
+
+                    return (
+                      <button
+                        key={line.id || idx}
+                        type="button"
+                        data-lyric-index={idx}
+                        onClick={() => handleLyricSeek(line.time)}
+                        className={`group w-full max-w-2xl cursor-pointer text-center px-4 py-2.5 rounded-2xl select-none flex items-center justify-between gap-3 studio-card-transition ${
+                          isActive
+                            ? 'text-white font-black text-lg sm:text-2xl scale-[1.02] bg-gradient-to-r from-purple-600/35 via-indigo-600/30 to-purple-600/35 border border-purple-400/60 shadow-[0_8px_28px_rgba(147,51,234,0.35)]'
+                            : isPast
+                            ? 'text-slate-500 text-sm sm:text-base opacity-60 hover:opacity-95 hover:bg-slate-900/60'
+                            : 'text-slate-300 text-sm sm:text-base opacity-85 hover:opacity-100 hover:bg-slate-900/60'
+                        }`}
+                      >
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold tabular-nums shrink-0 ${
+                            isActive
+                              ? 'bg-purple-500 text-white shadow-xs'
+                              : 'bg-slate-900 text-slate-400 group-hover:text-purple-300 border border-slate-800'
+                          }`}
+                        >
+                          {formatTime(line.time)}
+                        </span>
+                        <span className="flex-1 text-center text-pretty">
+                          {line.text}
+                        </span>
+                        <span className="w-10 text-[10px] font-mono text-purple-300 opacity-0 group-hover:opacity-100 shrink-0">
+                          SEEK →
+                        </span>
+                      </button>
+                    );
+                  })
+                ) : lyricsData?.plain_lyrics ? (
+                  <div className="whitespace-pre-line text-center text-slate-300 text-sm sm:text-base leading-relaxed py-4 max-w-2xl">
+                    {lyricsData.plain_lyrics}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-slate-400 gap-2">
+                    <MicLyricsIcon className="w-7 h-7 text-slate-500" />
+                    <p className="text-sm font-semibold">
+                      {lyricsData?.instrumental
+                        ? 'Esta faixa é instrumental (sem vocais registrados).'
+                        : 'Nenhuma letra sincronizada encontrada para esta música.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ===================================================================== */}
+        {/* 4. BARRA TÁTIL DUAL-MODE (OPÇÃO A <-> OPÇÃO C) & 5 PRESETS DE MIXAGEM */}
+        {/* ===================================================================== */}
+        <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-200/90 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          {/* Chave Seletora Dual-Mode: Bancada DAW Vertical 3D (Opção A) vs Modo Palco Horizontal (Opção C) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between lg:justify-start gap-3">
+            <div className="flex items-center gap-2">
+              <MixerFadersIcon className="w-5 h-5 text-[var(--color-brand-medium)] dark:text-blue-400" />
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white leading-none">
+                  Console Multifaixa • 6 Stems
+                </h3>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                  Duplo clique no fader retorna a 80% (0.0 dB Nominal)
+                </span>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleSeekDelta(5)}
-              disabled={!isLoaded}
-              title="Avançar 5 segundos (Seta Direita)"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-40 transition active:scale-95 rounded-xl border border-gray-200 dark:border-slate-700 shadow-xs cursor-pointer"
+            {/* Segmented Control Dual-Mode */}
+            <div
+              role="group"
+              aria-label="Modo de visualização do console"
+              className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 self-start sm:self-auto"
             >
-              <span>+5s</span>
-              <img src="/assets/icons/icon_seek_forward.png" alt="" className="w-4 h-4 object-contain opacity-75" />
-            </button>
+              <button
+                type="button"
+                onClick={() => setConsoleMode('daw')}
+                aria-pressed={consoleMode === 'daw'}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 studio-btn-transition cursor-pointer ${
+                  consoleMode === 'daw'
+                    ? 'bg-[var(--color-brand-medium)] text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <MixerFadersIcon className="w-3.5 h-3.5" />
+                <span>Bancada DAW (3D)</span>
+              </button>
 
-            <div className="text-xs text-gray-400 font-bold hidden sm:block">
-              {isPlaying ? (
-                <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                  <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
-                  Tocando
-                </span>
-              ) : (
-                <span>Pausado</span>
-              )}
+              <button
+                type="button"
+                onClick={() => setConsoleMode('stage')}
+                aria-pressed={consoleMode === 'stage'}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 studio-btn-transition cursor-pointer ${
+                  consoleMode === 'stage'
+                    ? 'bg-[var(--color-brand-medium)] text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <WaveformIcon className="w-3.5 h-3.5" />
+                <span>Modo Palco (Horizontal)</span>
+              </button>
             </div>
           </div>
 
-          {/* Barra da Linha do Tempo Estilo Spotify com Gradiente Suave & Marcadores A-B */}
-          <div className="w-full flex items-center gap-4">
-            <span className="text-xs md:text-sm font-bold text-gray-600 dark:text-slate-300 w-12 text-right tabular-nums">
-              {formatTime(progress)}
+          {/* 5 Presets Rápidos de Mixagem (Ideia 2) */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-slate-400 mr-1">
+              PRESETS:
             </span>
 
-            <div className="relative flex-1 flex items-center group py-3">
-              {/* Região Destacada do Loop A-B */}
-              {loopA !== null && loopB !== null && duration > 0 && (
-                <div
-                  className={`absolute top-2.5 bottom-2.5 pointer-events-none rounded transition-all ${
-                    isLooping
-                      ? 'bg-amber-400/35 border-x-2 border-amber-500 shadow-sm'
-                      : 'bg-slate-400/20 border-x border-slate-400/40'
-                  }`}
-                  style={{
-                    left: `${Math.max(0, Math.min(100, (Math.min(loopA, loopB) / duration) * 100))}%`,
-                    width: `${Math.max(0, Math.min(100, (Math.abs(loopB - loopA) / duration) * 100))}%`
-                  }}
-                />
-              )}
+            <button
+              type="button"
+              onClick={handleResetVolumes}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border studio-btn-transition active:scale-95 cursor-pointer ${
+                activeMixPreset === 'full'
+                  ? 'bg-[var(--color-brand-medium)] text-white border-[var(--color-brand-medium)] shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-200/75 dark:hover:bg-slate-700'
+              }`}
+              title="Restaura todos os 6 canais para 80% (0.0 dB) e limpa mutes/solos"
+            >
+              Mix Completo (80%)
+            </button>
 
-              {/* Pin Visual Ponto A */}
-              {loopA !== null && duration > 0 && (
-                <div
-                  className="absolute -top-1 -translate-x-1/2 pointer-events-none flex flex-col items-center z-10"
-                  style={{ left: `${Math.max(0, Math.min(100, (loopA / duration) * 100))}%` }}
-                >
-                  <span className="px-1.5 py-0.5 text-[9px] font-black rounded bg-amber-500 text-white shadow-xs">A</span>
-                </div>
-              )}
+            <button
+              type="button"
+              onClick={handleBackingTrackPreset}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border studio-btn-transition active:scale-95 cursor-pointer ${
+                activeMixPreset === 'backing'
+                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                  : 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/80 hover:bg-indigo-100'
+              }`}
+              title="Silencia automaticamente o seu instrumento principal para tocar junto"
+            >
+              Modo Backing Track
+            </button>
 
-              {/* Pin Visual Ponto B */}
-              {loopB !== null && duration > 0 && (
-                <div
-                  className="absolute -top-1 -translate-x-1/2 pointer-events-none flex flex-col items-center z-10"
-                  style={{ left: `${Math.max(0, Math.min(100, (loopB / duration) * 100))}%` }}
-                >
-                  <span className="px-1.5 py-0.5 text-[9px] font-black rounded bg-amber-600 text-white shadow-xs">B</span>
-                </div>
-              )}
+            <button
+              type="button"
+              onClick={handleKaraokePreset}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border studio-btn-transition active:scale-95 cursor-pointer ${
+                activeMixPreset === 'karaoke'
+                  ? 'bg-purple-600 text-white border-purple-500 shadow-xs'
+                  : 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/80 hover:bg-purple-100'
+              }`}
+              title="Silencia apenas o canal de Vocais"
+            >
+              Karaokê (Sem Voz)
+            </button>
 
-              <input
-                type="range"
-                min="0"
-                max={duration || 100}
-                step="0.1"
-                value={progress}
-                onChange={handleSeek}
-                disabled={!isLoaded}
-                aria-label="Progresso da música"
-                className="w-full h-2.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed"
-                style={{
-                  background: `linear-gradient(to right, #2563eb ${(progress / (duration || 100)) * 100}%, #64748b ${(progress / (duration || 100)) * 100}%)`
+            <button
+              type="button"
+              onClick={handleRhythmSectionPreset}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border studio-btn-transition active:scale-95 cursor-pointer ${
+                activeMixPreset === 'rhythm'
+                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs'
+                  : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-100'
+              }`}
+              title="Sola apenas Baixo e Bateria para treino de groove e tempo"
+            >
+              Só Cozinha (Bass + Drums)
+            </button>
+
+            <button
+              type="button"
+              onClick={handleHarmonyPreset}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border studio-btn-transition active:scale-95 cursor-pointer ${
+                activeMixPreset === 'harmony'
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-xs'
+                  : 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/80 hover:bg-amber-100'
+              }`}
+              title="Sola apenas Guitarra e Teclado/Piano para estudo harmônico"
+            >
+              Harmonia (Guitar + Piano)
+            </button>
+
+            {hasAnySolo && (
+              <button
+                type="button"
+                onClick={() => {
+                  const noSolo = {
+                    vocals: false,
+                    drums: false,
+                    bass: false,
+                    other: false,
+                    guitar: false,
+                    piano: false,
+                  };
+                  setSolos(noSolo);
+                  applyAudioRouting(mutes, noSolo);
                 }}
-              />
-            </div>
-
-            <div className="flex items-center gap-2 w-20 text-xs md:text-sm font-bold text-gray-500 dark:text-slate-400 tabular-nums">
-              <span>{formatTime(duration)}</span>
-              {duration > 0 && (
-                <span className="text-[11px] text-gray-400 hidden sm:inline">
-                  (-{formatTime(Math.max(0, duration - progress))})
-                </span>
-              )}
-            </div>
+                className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-black text-xs studio-btn-transition active:scale-95 cursor-pointer"
+              >
+                Limpar Solos ✕
+              </button>
+            )}
           </div>
         </section>
 
-        {/* ========================================================================= */}
-        {/* 2.5 SUÍTE DE PRÁTICA & ENSAIO MUSICAL (LOOP A-B, VELOCIDADE & METRÔNOMO) */}
-        {/* ========================================================================= */}
-        <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 md:p-6 shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-5">
+        {/* ===================================================================== */}
+        {/* 5. CONSOLE DE 6 CANAIS (STUDIOCHANNELSTRIP DUAL-MODE: DAW / STAGE)    */}
+        {/* ===================================================================== */}
+        <section aria-label="Canais de mixagem de stems">
+          <div
+            className={
+              consoleMode === 'daw'
+                ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 md:gap-4'
+                : 'flex flex-col gap-3'
+            }
+          >
+            {STEM_KEYS.map((track, idx) => {
+              const config = STEM_CONFIG[track];
+              const isMuted = mutes[track];
+              const isSolo = solos[track];
+              const effectivelyMuted = isTrackEffectivelyMuted(track);
+
+              return (
+                <StudioChannelStrip
+                  key={track}
+                  track={track}
+                  channelNumber={idx + 1}
+                  config={config}
+                  volume={volumes[track]}
+                  isMuted={isMuted}
+                  isSolo={isSolo}
+                  isEffectivelyMuted={effectivelyMuted}
+                  isPlaying={isPlaying}
+                  consoleMode={consoleMode}
+                  progressPercent={progressPercent}
+                  onVolumeChange={handleVolumeChange}
+                  onToggleMute={toggleMute}
+                  onToggleSolo={toggleSolo}
+                  onHoverStart={() => setHoveredStem(track)}
+                  onHoverEnd={() =>
+                    setHoveredStem((prev) => (prev === track ? null : prev))
+                  }
+                />
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ===================================================================== */}
+        {/* 6. STUDIO PRACTICE SUITE (LOOP A-B, VARISPEED & MARCADORES SALVOS)    */}
+        {/* ===================================================================== */}
+        <section className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-5 md:p-6 shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg font-black shadow-xs">
-                🎸
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center shadow-2xs">
+                <LoopRepeatIcon className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight">
-                    Studio Practice Suite • Modo de Ensaio
+                    Studio Practice Suite • Repetição A-B, Varispeed & Marcadores
                   </h3>
                   {isLooping && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
-                      Loop Ativo
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                      LOOP ATIVO
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  Repita trechos com Loop A-B, reduza a velocidade sem desafinar e prepare-se com contagem de entrada.
+                  Isole solos complexos com Loop A-B, reduza o andamento sem alterar o tom e salve pins na forma de onda.
                 </p>
               </div>
             </div>
-
-            {/* Toggle de Contagem de Entrada */}
-            <button
-              type="button"
-              onClick={() => setIsCountInEnabled(prev => !prev)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition active:scale-95 border cursor-pointer ${
-                isCountInEnabled
-                  ? 'bg-amber-500 text-white border-amber-400 shadow-amber-500/20 shadow-xs'
-                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80'
-              }`}
-              title="Executa 4 cliques com tom de entrada antes do playback ou de recomeçar"
-            >
-              <span className="text-sm">⏱️</span>
-              <span>Count-in (4 Tempos): <strong>{isCountInEnabled ? "Ligado" : "Desligado"}</strong></span>
-            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
             {/* Bloco 1: Controles de Loop A-B */}
-            <div className="lg:col-span-7 flex flex-col justify-between bg-slate-50/80 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 gap-3">
+            <div className="lg:col-span-7 flex flex-col justify-between bg-slate-50/90 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Repetição de Trecho (Loop A-B)
                 </span>
-                
-                {/* Status dos Pontos A e B */}
-                <div className="flex items-center gap-2 text-xs font-bold">
-                  <span className={`px-2 py-0.5 rounded-md ${loopA !== null ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800' : 'text-slate-400'}`}>
+
+                <div className="flex items-center gap-2 text-xs font-mono font-bold tabular-nums">
+                  <span
+                    className={`px-2 py-0.5 rounded-md ${
+                      loopA !== null
+                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                        : 'text-slate-400'
+                    }`}
+                  >
                     A: {loopA !== null ? formatTime(loopA) : '--:--'}
                   </span>
                   <span className="text-slate-300 dark:text-slate-600">→</span>
-                  <span className={`px-2 py-0.5 rounded-md ${loopB !== null ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800' : 'text-slate-400'}`}>
+                  <span
+                    className={`px-2 py-0.5 rounded-md ${
+                      loopB !== null
+                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                        : 'text-slate-400'
+                    }`}
+                  >
                     B: {loopB !== null ? formatTime(loopB) : '--:--'}
                   </span>
                   {loopA !== null && loopB !== null && loopB > loopA && (
@@ -1180,52 +2289,60 @@ const Mixer = () => {
                 </div>
               </div>
 
-              {/* Botões de Ação do Loop A-B */}
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => handleSetLoopA()}
                   disabled={!isLoaded}
-                  className="flex-1 min-w-[110px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-600 shadow-xs transition active:scale-95 cursor-pointer"
+                  className="flex-1 min-w-[115px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs studio-btn-transition active:scale-95 cursor-pointer"
                   title="Marcar início do loop na posição atual (Atalho: [ )"
                 >
-                  <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-black">A</span>
-                  <span>Marcar A <kbd className="text-[10px] opacity-60 ml-0.5 font-mono">[</kbd></span>
+                  <span className="w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] flex items-center justify-center font-black">
+                    A
+                  </span>
+                  <span>
+                    Marcar Início <kbd className="text-[10px] opacity-65 ml-0.5 font-mono">[</kbd>
+                  </span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleSetLoopB()}
                   disabled={!isLoaded}
-                  className="flex-1 min-w-[110px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-600 shadow-xs transition active:scale-95 cursor-pointer"
+                  className="flex-1 min-w-[115px] flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs studio-btn-transition active:scale-95 cursor-pointer"
                   title="Marcar fim do loop na posição atual (Atalho: ] )"
                 >
-                  <span className="w-4 h-4 rounded-full bg-amber-600 text-white text-[10px] flex items-center justify-center font-black">B</span>
-                  <span>Marcar B <kbd className="text-[10px] opacity-60 ml-0.5 font-mono">]</kbd></span>
+                  <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 text-[10px] flex items-center justify-center font-black">
+                    B
+                  </span>
+                  <span>
+                    Marcar Fim <kbd className="text-[10px] opacity-65 ml-0.5 font-mono">]</kbd>
+                  </span>
                 </button>
 
                 <button
                   type="button"
                   onClick={toggleLooping}
                   disabled={!isLoaded}
-                  className={`flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl transition active:scale-95 shadow-xs cursor-pointer ${
+                  className={`flex-1 min-w-[125px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-extrabold rounded-xl studio-btn-transition active:scale-95 shadow-2xs cursor-pointer ${
                     isLooping
-                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                      : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                      : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
                   }`}
                   title="Ligar ou desligar repetição contínua (Atalho: L)"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                    <path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0014.053-4.015.75.75 0 00-.524-.938z" clipRule="evenodd" />
-                  </svg>
-                  <span>{isLooping ? "Loop Ativo" : "Ativar Loop"} <kbd className="text-[10px] opacity-60 ml-0.5 font-mono">L</kbd></span>
+                  <LoopRepeatIcon className="w-4 h-4" />
+                  <span>
+                    {isLooping ? 'Loop Ativo' : 'Ativar Loop'}{' '}
+                    <kbd className="text-[10px] opacity-65 ml-0.5 font-mono">L</kbd>
+                  </span>
                 </button>
 
                 {(loopA !== null || loopB !== null) && (
                   <button
                     type="button"
                     onClick={handleClearLoop}
-                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer"
+                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl studio-btn-transition cursor-pointer"
                     title="Limpar marcadores A e B"
                   >
                     ✕
@@ -1233,27 +2350,29 @@ const Mixer = () => {
                 )}
               </div>
 
-              {/* Botão para Salvar Trecho Atual como Bookmark */}
-              <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
+              {/* Salvar Trecho Atual como Marcador na Timeline */}
+              <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-2">
                 {!isSavingMarker ? (
                   <button
                     type="button"
                     onClick={() => {
                       if (loopA === null || loopB === null || loopB <= loopA) {
-                        alert("Defina primeiro os pontos A e B para poder salvar o trecho de treino.");
+                        alert(
+                          'Defina primeiro os pontos A e B para salvar o trecho como pin na timeline.'
+                        );
                         return;
                       }
                       setIsSavingMarker(true);
                     }}
-                    className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                    className="flex items-center gap-1.5 text-xs font-extrabold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
                   >
-                    <span>⭐ Salvar este trecho como marcador permanente</span>
+                    <span>+ Salvar este trecho A-B como Pin permanente na forma de onda</span>
                   </button>
                 ) : (
                   <div className="flex items-center gap-2 w-full">
                     <input
                       type="text"
-                      placeholder="Nome do trecho (ex: Solo, Riff da Intro)"
+                      placeholder="Nome do trecho (ex: Solo Principal, Riff Intro)"
                       value={newMarkerName}
                       onChange={(e) => setNewMarkerName(e.target.value)}
                       onKeyDown={(e) => {
@@ -1266,9 +2385,9 @@ const Mixer = () => {
                     <button
                       type="button"
                       onClick={handleSaveMarker}
-                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer"
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-lg shadow-2xs cursor-pointer"
                     >
-                      Salvar
+                      Salvar Pin
                     </button>
                     <button
                       type="button"
@@ -1282,37 +2401,35 @@ const Mixer = () => {
               </div>
             </div>
 
-            {/* Bloco 2: Controle de Velocidade / Slow Down */}
-            <div className="lg:col-span-5 flex flex-col justify-between bg-slate-50/80 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 gap-3">
+            {/* Bloco 2: Controle de Velocidade / Varispeed */}
+            <div className="lg:col-span-5 flex flex-col justify-between bg-slate-50/90 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Velocidade (Slow Down)
+                  Velocidade (Varispeed Pitch-Locked)
                 </span>
-                <span className="px-2 py-0.5 rounded-md text-xs font-black bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                <span className="px-2 py-0.5 rounded-md text-xs font-mono font-black bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 tabular-nums">
                   {Math.round(playbackSpeed * 100)}% ({playbackSpeed}x)
                 </span>
               </div>
 
-              {/* Presets Rápidos de Velocidade */}
               <div className="flex items-center gap-1.5">
-                {[0.5, 0.75, 0.9, 1.0, 1.1].map(speed => (
+                {[0.5, 0.75, 0.9, 1.0, 1.1, 1.25].map((speed) => (
                   <button
                     key={speed}
                     type="button"
                     onClick={() => handleSpeedChange(speed)}
-                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition active:scale-95 border cursor-pointer ${
+                    className={`flex-1 py-1.5 text-xs font-mono font-black rounded-lg studio-btn-transition active:scale-95 border cursor-pointer tabular-nums ${
                       playbackSpeed === speed
-                        ? 'bg-[var(--color-brand-medium)] text-white border-[var(--color-brand-medium)] shadow-xs'
-                        : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
+                        ? 'bg-[var(--color-brand-medium)] text-white border-[var(--color-brand-medium)] shadow-2xs'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                     }`}
                   >
-                    {speed === 1.0 ? "1x (Normal)" : `${speed}x`}
+                    {speed === 1.0 ? '1.0x' : `${speed}x`}
                   </button>
                 ))}
               </div>
 
-              {/* Slider de Ajuste Fino */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 font-mono tabular-nums">
                 <span className="text-[10px] font-bold text-slate-400">50%</span>
                 <input
                   type="range"
@@ -1321,47 +2438,61 @@ const Mixer = () => {
                   step="0.05"
                   value={playbackSpeed}
                   onChange={(e) => handleSpeedChange(e.target.value)}
-                  className="flex-1 h-2 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  aria-label="Velocidade de reprodução"
+                  className="flex-1 h-2 bg-slate-300 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 />
                 <span className="text-[10px] font-bold text-slate-400">125%</span>
               </div>
 
               <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>Afinação da música protegida (Tom mantido em {currentKey})</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>
+                  Compensação harmônica ativa (Tom preservado em{' '}
+                  <strong className="font-mono">{currentKey}</strong>)
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Lista de Marcadores de Treino Salvos (Bookmarks) */}
+          {/* Lista de Marcadores de Treino Salvos */}
           {practiceMarkers.length > 0 && (
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-2">
-                Trechos Salvos desta Música ({practiceMarkers.length}):
+                Pins de Treino Salvos na Timeline ({practiceMarkers.length}):
               </span>
               <div className="flex flex-wrap items-center gap-2">
-                {practiceMarkers.map(marker => {
-                  const isCurrentActive = loopA === marker.start && loopB === marker.end && isLooping;
+                {practiceMarkers.map((marker) => {
+                  const isCurrentActive =
+                    loopA === marker.start && loopB === marker.end && isLooping;
                   return (
                     <div
                       key={marker.id}
                       onClick={() => handleApplyMarker(marker)}
-                      className={`group flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs ${
+                      className={`group flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-xl border text-xs font-bold studio-btn-transition active:scale-95 cursor-pointer shadow-2xs tabular-nums ${
                         isCurrentActive
-                          ? 'bg-amber-500 text-white border-amber-400 shadow-amber-500/20'
-                          : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-600'
+                          ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/20'
+                          : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                       }`}
-                      title={`Tocar em loop: ${formatTime(marker.start)} até ${formatTime(marker.end)}`}
+                      title={`Ativar Loop: ${formatTime(marker.start)} até ${formatTime(
+                        marker.end
+                      )}`}
                     >
-                      <span className="text-amber-500 group-hover:scale-110 transition-transform">🎸</span>
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: marker.color || '#f59e0b' }}
+                      />
                       <span>{marker.name}</span>
-                      <span className={`text-[10px] font-normal ${isCurrentActive ? 'text-amber-100' : 'text-slate-400'}`}>
+                      <span
+                        className={`text-[10px] font-mono ${
+                          isCurrentActive ? 'text-slate-900' : 'text-slate-400'
+                        }`}
+                      >
                         [{formatTime(marker.start)} - {formatTime(marker.end)}]
                       </span>
                       <button
                         type="button"
                         onClick={(e) => handleDeleteMarker(marker.id, e)}
-                        className="p-0.5 rounded hover:bg-black/10 transition text-xs opacity-60 hover:opacity-100 ml-1"
+                        className="p-0.5 rounded hover:bg-black/10 text-xs opacity-65 hover:opacity-100 ml-1 cursor-pointer"
                         title="Remover este marcador"
                       >
                         ✕
@@ -1374,383 +2505,49 @@ const Mixer = () => {
           )}
         </section>
 
-
-        {/* 3. BARRA MASTER & PRESETS DE ENSAIO */}
-        <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-white/80 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-5">
-          
-          {/* Master Volume */}
-          <div className="w-full md:w-80 flex items-center gap-4 bg-slate-50 dark:bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={toggleMasterMute}
-              title={isMasterMuted ? "Desmutar Master (M)" : "Mutar Master (M)"}
-              className={`p-1.5 rounded-lg transition active:scale-95 cursor-pointer ${
-                isMasterMuted ? 'bg-red-500 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              {isMasterMuted ? (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                  <path d="M13.5 4.06c0-1.333-1.612-2.003-2.553-1.062l-4.506 4.506H4.5a2.25 2.25 0 00-2.25 2.25v6a2.25 2.25 0 002.25 2.25h1.941l4.506 4.506c.941.941 2.553.271 2.553-1.062V4.06zM17.28 9.22a.75.75 0 10-1.06 1.06L17.44 11.5l-1.22 1.22a.75.75 0 101.06 1.06l1.22-1.22 1.22 1.22a.75.75 0 101.06-1.06L19.56 11.5l1.22-1.22a.75.75 0 10-1.06-1.06l-1.22 1.22-1.22-1.22z" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                  <path d="M13.5 4.06c0-1.333-1.612-2.003-2.553-1.062l-4.506 4.506H4.5a2.25 2.25 0 00-2.25 2.25v6a2.25 2.25 0 002.25 2.25h1.941l4.506 4.506c.941.941 2.553.271 2.553-1.062V4.06zM18.75 12a.75.75 0 00-1.5 0 4.25 4.25 0 01-4.25 4.25.75.75 0 000 1.5 5.75 5.75 0 005.75-5.75z" />
-                </svg>
-              )}
-            </button>
-
-            <div className="flex-1 flex flex-col">
-              <div className="flex justify-between items-center text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                <span>Master Gain</span>
-                <span className="text-gray-900 dark:text-slate-100 font-extrabold">{masterVolume}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={masterVolume}
-                onChange={(e) => handleMasterVolumeChange(e.target.value)}
-                className="w-full h-2 bg-gray-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
-                style={{
-                  background: `linear-gradient(to right, #2563eb ${masterVolume}%, #64748b ${masterVolume}%)`
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Ações Rápidas / Presets de Prática para Músicos */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={handleBackingTrackPreset}
-              className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-800 transition active:scale-95 shadow-xs"
-              title="Muta automaticamente o seu instrumento principal para você praticar junto"
-            >
-              <img src="/assets/icons/icon_backing_track.png" alt="" className="w-4 h-4 object-contain" />
-              <span>Modo Backing Track</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleResetVolumes}
-              className="flex items-center gap-2 px-3.5 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 font-bold text-xs rounded-xl border border-gray-300 dark:border-slate-700 transition active:scale-95 shadow-xs"
-              title="Restaura todas as faixas para volume padrão (80%) e remove solos/mutes"
-            >
-              <img src="/assets/icons/icon_reset_levels.png" alt="" className="w-4 h-4 object-contain" />
-              <span>Resetar Níveis</span>
-            </button>
-
-            {hasAnySolo && (
-              <button
-                type="button"
-                onClick={() => {
-                  const noSolo = { vocals: false, drums: false, bass: false, other: false, guitar: false, piano: false };
-                  setSolos(noSolo);
-                  applyAudioRouting(mutes, noSolo);
-                }}
-                className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L10 8.94l3.72-3.72a.75.75 0 111.06 1.06L11.06 10l3.72 3.72a.75.75 0 01-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 01-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 011.06-1.06z" />
-                </svg>
-                <span>Limpar Solos</span>
-              </button>
-            )}
-
-            {/* BOTÃO MODO KARAOKÊ / LETRAS */}
-            <button
-              type="button"
-              onClick={() => setShowLyrics(prev => !prev)}
-              className={`flex items-center gap-2 px-3.5 py-2 font-bold text-xs rounded-xl border transition active:scale-95 shadow-xs cursor-pointer ${
-                showLyrics
-                  ? 'bg-purple-600 text-white border-purple-500 shadow-purple-500/20'
-                  : 'bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
-              }`}
-              title="Abrir teleprompter com letra sincronizada da música"
-            >
-              <span className="text-sm">🎤</span>
-              <span>Modo Karaokê / Letras</span>
-              {lyricsData?.has_synced && (
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              )}
-            </button>
-          </div>
-        </section>
-
-        {/* BANNER DINÂMICO SE VOCAL ESTIVER MUTADO E KARAOKÊ FECHADO */}
-        {mutes.vocals && !showLyrics && (parsedLyrics.length > 0 || lyricsData?.plain_lyrics) && (
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🎤</span>
-              <div>
-                <h4 className="text-xs sm:text-sm font-black text-purple-900 dark:text-purple-200">
-                  Faixa de vocal mutada!
-                </h4>
-                <p className="text-xs text-purple-700 dark:text-purple-300">
-                  Você é a voz principal agora. Deseja acompanhar a letra sincronizada?
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowLyrics(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition shadow-xs shrink-0 cursor-pointer"
-            >
-              Abrir Karaokê
-            </button>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 3.1 MODO KARAOKÊ & TELEPROMPTER DE LETRAS SINCRONIZADAS (LRCLIB)          */}
-        {/* ========================================================================= */}
-        {showLyrics && (
-          <section className="bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white rounded-2xl p-6 md:p-8 shadow-2xl border border-indigo-500/30 flex flex-col gap-4 relative overflow-hidden transition-all duration-300">
-            {/* Cabeçalho do Karaokê */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-xl shadow-inner">
-                  🎤
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
-                      Modo Karaokê & Letras Sincronizadas
-                    </h3>
-                    {lyricsData?.has_synced && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                        Sincronizado
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    {lyricsData?.has_synced
-                      ? "As frases acompanham a reprodução em tempo real. Clique em qualquer frase para saltar o áudio."
-                      : "Letra da música (modo texto contínuo)."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowLyrics(false)}
-                  className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition border border-white/10 cursor-pointer"
-                >
-                  Minimizar ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Conteúdo das Letras com Auto-Scroll */}
-            <div
-              ref={lyricsContainerRef}
-              className="relative max-h-80 md:max-h-96 overflow-y-auto px-4 py-8 flex flex-col items-center gap-4 scroll-smooth"
-            >
-              {isLoadingLyrics ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <div className="w-8 h-8 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
-                    Buscando letra sincronizada...
-                  </p>
-                </div>
-              ) : parsedLyrics.length > 0 ? (
-                parsedLyrics.map((line, idx) => {
-                  const isActive = idx === activeLyricIndex;
-                  const isPast = idx < activeLyricIndex;
-
-                  return (
-                    <p
-                      key={line.id || idx}
-                      data-lyric-index={idx}
-                      onClick={() => handleLyricSeek(line.time)}
-                      className={`cursor-pointer text-center transition-all duration-300 px-4 py-2 rounded-xl select-none ${
-                        isActive
-                          ? 'text-white font-black text-xl sm:text-2xl scale-105 bg-purple-600/30 border border-purple-500/50 shadow-lg shadow-purple-900/40'
-                          : isPast
-                          ? 'text-slate-500 text-sm sm:text-base opacity-60 hover:opacity-90 hover:text-slate-300'
-                          : 'text-slate-400 text-sm sm:text-base opacity-80 hover:opacity-100 hover:text-slate-200'
-                      }`}
-                    >
-                      {line.text}
-                    </p>
-                  );
-                })
-              ) : lyricsData?.plain_lyrics ? (
-                <div className="whitespace-pre-line text-center text-slate-300 text-sm sm:text-base leading-relaxed py-4">
-                  {lyricsData.plain_lyrics}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-slate-400 gap-2">
-                  <span className="text-2xl">🎵</span>
-                  <p className="text-sm font-semibold">
-                    {lyricsData?.instrumental ? "Esta música é instrumental (sem vocais)." : "Nenhuma letra encontrada no banco para esta faixa."}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* 4. CONSOLE DE MIXAGEM VERTICAL COM 6 CANAIS (STEMS) */}
-        <section>
-          <div className="flex items-center justify-between mb-4 px-1">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-gray-600 dark:text-slate-400 flex items-center gap-2">
-              <img src="/assets/icons/icon_mixer_board.png" alt="" className="w-5 h-5 object-contain" />
-              <span>Canais de Mixagem Multifaixa</span>
-              <span className="text-xs text-[var(--color-brand-medium)] dark:text-blue-400 font-bold">
-                (Isolamento Cirúrgico HTDemucs)
-              </span>
-            </h3>
-            <span className="text-xs text-gray-400 dark:text-slate-500 font-medium hidden sm:inline">
-              Clique duas vezes no fader para resetar a 80%
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-5">
-            {STEM_KEYS.map((track) => {
-              const config = STEM_CONFIG[track];
-              const isMuted = mutes[track];
-              const isSolo = solos[track];
-              const isEffectivelyMuted = hasAnySolo ? (!isSolo || isMuted) : isMuted;
-              const isSounding = isPlaying && !isEffectivelyMuted && volumes[track] > 0;
-
-              return (
-                <div
-                  key={track}
-                  className={`relative rounded-2xl p-4 md:p-5 flex flex-col items-center justify-between transition-all duration-200 border-2 shadow-sm ${
-                    isEffectivelyMuted
-                      ? 'bg-slate-100/80 dark:bg-slate-800/50 border-slate-300 dark:border-slate-700 opacity-60'
-                      : isSolo
-                      ? 'bg-amber-50/40 dark:bg-amber-950/40 border-amber-400 shadow-md ring-2 ring-amber-300'
-                      : 'bg-white/95 dark:bg-slate-900/90 backdrop-blur-sm border-gray-200/90 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md'
-                  }`}
-                >
-                  {/* Cabeçalho do Canal: Ícone + Nome do Stem */}
-                  <div className="w-full flex flex-col items-center text-center">
-                    <div className="flex flex-col items-center gap-2 mb-1">
-                      <img
-                        src={config.iconSrc}
-                        alt={config.label}
-                        className="w-10 h-10 object-contain drop-shadow-sm transition-transform duration-200 hover:scale-105"
-                      />
-                      <h4 className="text-xs font-black uppercase tracking-wider text-gray-800 dark:text-slate-100">
-                        {config.label}
-                      </h4>
-                    </div>
-
-                    {/* VU Meter / Equalizador Visual Animado */}
-                    <div className="h-5 flex items-end justify-center gap-1 my-2" title="Nível de sinal do canal">
-                      {isSounding ? (
-                        <>
-                          <span className="w-1 bg-[var(--color-brand-medium)] rounded-full eq-bar-1"></span>
-                          <span className="w-1 bg-[var(--color-brand-medium)] rounded-full eq-bar-2"></span>
-                          <span className="w-1 bg-[var(--color-brand-medium)] rounded-full eq-bar-3"></span>
-                          <span className="w-1 bg-[var(--color-brand-medium)] rounded-full eq-bar-4"></span>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-1 opacity-30">
-                          <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                          <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                          <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                          <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Fader Vertical de Ganho com Escala Visual */}
-                  <div className="relative flex items-center justify-center h-48 w-full my-2">
-                    {/* Linhas de marcação métrica (-∞, -18, -6, 0 dB) */}
-                    <div className="absolute right-3 h-40 flex flex-col justify-between text-[9px] font-bold text-gray-300 dark:text-slate-600 pointer-events-none select-none">
-                      <span>0dB</span>
-                      <span>-6</span>
-                      <span>-18</span>
-                      <span>-∞</span>
-                    </div>
-
-                    {/* Trilha do Fader com rotação de -90 graus */}
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={volumes[track]}
-                      onDoubleClick={() => handleVolumeChange(track, 80)}
-                      onChange={(e) => handleVolumeChange(track, e.target.value)}
-                      aria-label={`Volume de ${config.label}`}
-                      className="appearance-none w-40 h-2 rounded-lg cursor-pointer accent-blue-600 focus:outline-none origin-center -rotate-90"
-                      style={{
-                        background: `linear-gradient(to right, ${config.accentHex} ${volumes[track]}%, #cbd5e1 ${volumes[track]}%)`
-                      }}
-                    />
-                  </div>
-
-                  {/* Badge de Porcentagem / Decibéis */}
-                  <div className="my-2">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-black bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-700 tabular-nums">
-                      {volumes[track]}%
-                    </span>
-                  </div>
-
-                  {/* Ações do Canal: SOLO e MUTE de Alta Legibilidade */}
-                  <div className="grid grid-cols-2 gap-1.5 w-full mt-1">
-                    {/* Botão SOLO */}
-                    <button
-                      type="button"
-                      onClick={() => toggleSolo(track)}
-                      title={`Isolar faixa ${config.label} (Solo)`}
-                      className={`py-2 rounded-xl text-[11px] font-black tracking-wider transition active:scale-95 cursor-pointer ${
-                        isSolo
-                          ? 'bg-amber-500 text-white shadow-sm ring-1 ring-amber-600'
-                          : 'bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-700'
-                      }`}
-                    >
-                      SOLO
-                    </button>
-
-                    {/* Botão MUTE */}
-                    <button
-                      type="button"
-                      onClick={() => toggleMute(track)}
-                      title={`Mutar faixa ${config.label}`}
-                      className={`py-2 rounded-xl text-[11px] font-black tracking-wider transition active:scale-95 cursor-pointer ${
-                        isMuted
-                          ? 'bg-red-600 text-white shadow-sm ring-1 ring-red-700'
-                          : 'bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white'
-                      }`}
-                    >
-                      {isMuted ? 'MUDO' : 'MUTE'}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* 5. GUIA DE ATALHOS DE TECLADO NO RODAPÉ */}
-        <footer className="mt-2 py-3 px-4 rounded-xl bg-white/70 dark:bg-slate-900/85 backdrop-blur-sm border border-gray-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-xs text-gray-500 dark:text-slate-400 gap-3 transition-all">
+        {/* ===================================================================== */}
+        {/* 7. RODAPÉ DE ATALHOS DE CONSOLE (1..6 MUTE, SHIFT+1..6 SOLO, ETC.)    */}
+        {/* ===================================================================== */}
+        <footer className="py-3 px-4 rounded-2xl bg-white/85 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <img src="/assets/icons/icon_keyboard_shortcuts.png" alt="" className="w-4 h-4 object-contain" />
-            <span className="font-bold text-gray-700 dark:text-slate-200">Atalhos Rápidos:</span>
-            <span className="bg-gray-200 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold">Espaço</span>
-            <span>Tocar / Pausar</span>
-            <span className="text-gray-300 dark:text-slate-600">•</span>
-            <span className="bg-gray-200 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold">← / →</span>
-            <span>±5 Segundos</span>
-            <span className="text-gray-300 dark:text-slate-600">•</span>
-            <span className="bg-gray-200 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold">M</span>
-            <span>Mutar Geral</span>
-            <span className="text-gray-300 dark:text-slate-600">•</span>
-            <span className="bg-gray-200 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold">R</span>
-            <span>Reiniciar</span>
+            <img
+              src="/assets/icons/icon_keyboard_shortcuts.png"
+              alt=""
+              className="w-4 h-4 object-contain"
+            />
+            <span className="font-extrabold text-slate-700 dark:text-slate-200">
+              Atalhos de Console:
+            </span>
+            <kbd className="bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
+              Espaço
+            </kbd>
+            <span>Play/Pause</span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <kbd className="bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
+              1–6
+            </kbd>
+            <span>Mute Canal 1–6</span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <kbd className="bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
+              Shift + 1–6
+            </kbd>
+            <span>Solo Canal 1–6</span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <kbd className="bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
+              [ / ] / L
+            </kbd>
+            <span>Loop A-B</span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <kbd className="bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
+              M / R
+            </kbd>
+            <span>Master Mute / Restart</span>
           </div>
 
-          <div className="text-[11px] text-gray-400 dark:text-slate-500">
-            EasyCovers Audio Engine • Tone.js Web Audio API
+          <div className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+            EasyCovers Audio Engine • Tone.Meter Real-Time GPU
           </div>
         </footer>
-
       </main>
     </div>
   );
