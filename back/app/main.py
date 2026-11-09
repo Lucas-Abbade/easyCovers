@@ -10,8 +10,8 @@ from fastapi.staticfiles import StaticFiles
 
 # Importações dos nossos próprios módulos
 from .database import engine, Base, run_migrations
-# ADICIONADO: importação dos routers 'profile', 'music', 'spotify' e 'landing'
-from .routers import auth, songs, upload, profile, music, spotify, landing
+# ADICIONADO: importação dos routers 'profile', 'music', 'spotify', 'landing' e 'playlists'
+from .routers import auth, songs, upload, profile, music, spotify, landing, playlists
 
 # Cria as tabelas no banco de dados e executa migrações
 Base.metadata.create_all(bind=engine)
@@ -22,8 +22,10 @@ app = FastAPI(title="EasyCovers API")
 # Configuração de pastas
 UPLOAD_DIR = "static/profile_pics"
 BANNER_DIR = "static/banner_pics"
+PLAYLIST_PICS_DIR = "static/playlist_pics"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(BANNER_DIR, exist_ok=True)
+os.makedirs(PLAYLIST_PICS_DIR, exist_ok=True)
 os.makedirs("storage/stems", exist_ok=True)
 
 # --- CONFIGURAÇÃO DE ARQUIVOS ESTÁTICOS ---
@@ -54,6 +56,7 @@ app.include_router(profile.router)
 app.include_router(music.router)
 app.include_router(spotify.router)
 app.include_router(landing.router)
+app.include_router(playlists.router)
 
 @app.get("/")
 def root():

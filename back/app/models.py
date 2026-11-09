@@ -2,9 +2,17 @@ import os
 import enum
 import shutil
 from datetime import datetime
-from sqlalchemy import Enum, Column, Integer, String, Boolean, DateTime, ForeignKey, event
+from sqlalchemy import Enum, Column, Integer, String, Boolean, DateTime, ForeignKey, Table, event
 from sqlalchemy.orm import relationship
 from .database import Base
+
+playlist_songs = Table(
+    "playlist_songs",
+    Base.metadata,
+    Column("playlist_id", Integer, ForeignKey("playlists.id", ondelete="CASCADE"), primary_key=True),
+    Column("song_id", Integer, ForeignKey("songs.id", ondelete="CASCADE"), primary_key=True),
+    Column("added_at", DateTime, default=datetime.utcnow, nullable=True),
+)
 
 #enumerador para tons das faixas
 
@@ -74,6 +82,7 @@ class User(Base):
     spotify_liked_tracks_json = Column(String, nullable=True)
 
     songs = relationship("Song", back_populates="owner")
+    playlists = relationship("Playlist", back_populates="owner", cascade="all, delete-orphan")
 
 
 class EmailVerification(Base):
@@ -107,6 +116,20 @@ class Song(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     
     owner = relationship("User", back_populates="songs")
+
+
+class Playlist(Base):
+    __tablename__ = "playlists"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    cover_image_url = Column(String, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=True)
+
+    owner = relationship("User", back_populates="playlists")
+    songs = relationship("Song", secondary=playlist_songs, backref="playlists")
 
 #gatilho para limpeza de arquivos físicos quando uma música é deletada do banco de dados
 @event.listens_for(Song, 'after_delete')

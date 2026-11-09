@@ -127,3 +127,18 @@ class PublicShowcaseResponse(BaseModel):
     cached: bool = False
     featured_tracks: List[ShowcaseTrackItem] = []
     recent_community_songs: List[SongSummary] = []
+
+
+class PlaylistAddSongsRequest(BaseModel):
+    song_ids: List[int] = []
+
+
+class PlaylistResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = ""
+    cover_image_url: Optional[str] = ""
+    user_id: int
+    created_at: Optional[datetime] = None
+    songs: List[SongSummary] = []
+

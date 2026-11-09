@@ -27,8 +27,9 @@ const App = () => {
   });
   
   const [songs, setSongs] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
 
-  // 2. Sempre que o 'user' mudar (login ou refresh), garante persistência e busca as músicas no servidor
+  // 2. Sempre que o 'user' mudar (login ou refresh), garante persistência e busca as músicas e playlists no servidor
   useEffect(() => {
     if (user && user.id) {
       // Salva o usuário no computador para persistir o login
@@ -41,6 +42,14 @@ const App = () => {
           setSongs(Array.isArray(data) ? data : []);
         })
         .catch(err => console.error("Erro ao carregar biblioteca:", err));
+
+      // Busca as playlists do usuário no banco de dados
+      fetch(`http://localhost:8000/playlists/${user.id}`)
+        .then(res => (res.ok ? res.json() : []))
+        .then(data => {
+          setPlaylists(Array.isArray(data) ? data : []);
+        })
+        .catch(err => console.error("Erro ao carregar playlists:", err));
     }
   }, [user]);
 
@@ -61,6 +70,7 @@ const App = () => {
     localStorage.removeItem('user');
     setUser(null);
     setSongs([]);
+    setPlaylists([]);
   };
 
   const handleUpdateUser = (updatedData) => {
@@ -88,8 +98,14 @@ const App = () => {
       });
 
       if (response.ok) {
-        // 2. Se o Python confirmou que deletou, removemos da tela do React
+        // 2. Se o Python confirmou que deletou, removemos da tela do React e das playlists em memória
         setSongs(prevSongs => prevSongs.filter(s => s.id !== id));
+        setPlaylists(prevPlaylists =>
+          prevPlaylists.map(pl => ({
+            ...pl,
+            songs: Array.isArray(pl.songs) ? pl.songs.filter(s => s.id !== id) : [],
+          }))
+        );
       } else {
         const errorData = await response.json();
         alert(`Erro ao excluir: ${errorData.detail}`);
@@ -128,8 +144,17 @@ const App = () => {
         } />
         
         <Route path="/dashboard" element={
-          user ? <Dashboard email={user.username || user.email} user={user} songs={songs} onDeleteSong={handleDeleteSong} onLogout={handleLogout} /> 
-          : <Navigate to="/" />
+          user ? (
+            <Dashboard
+              email={user.username || user.email}
+              user={user}
+              songs={songs}
+              playlists={playlists}
+              onPlaylistsChange={setPlaylists}
+              onDeleteSong={handleDeleteSong}
+              onLogout={handleLogout}
+            />
+          ) : <Navigate to="/" />
         } />
         
         <Route path="/upload" element={
