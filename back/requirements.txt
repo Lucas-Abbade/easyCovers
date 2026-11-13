@@ -12,3 +12,6 @@ wheel
 yt-dlp
 google-auth
 python-dotenv
+sqlalchemy
+requests
+pydantic

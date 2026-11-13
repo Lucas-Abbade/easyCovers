@@ -68,14 +68,12 @@ class TestPlaylistsSuite(unittest.TestCase):
         self.db.refresh(song2)
 
         # 2. Cria uma playlist sem foto
-        res_create = asyncio.run(
-            create_playlist(
-                user_id=user.id,
-                db=self.db,
-                name="Repertório Show de Sexta",
-                description="Setlist principal da banda",
-                cover_image=None,
-            )
+        res_create = create_playlist(
+            user_id=user.id,
+            db=self.db,
+            name="Repertório Show de Sexta",
+            description="Setlist principal da banda",
+            cover_image=None,
         )
         self.assertEqual(res_create["status"], "sucesso")
         playlist_id = res_create["playlist"]["id"]
@@ -101,15 +99,13 @@ class TestPlaylistsSuite(unittest.TestCase):
         self.assertEqual(len(res_add_dup["playlist"]["songs"]), 2)
 
         # 5. Atualiza nome e descrição da playlist
-        res_update = asyncio.run(
-            update_playlist(
-                playlist_id=playlist_id,
-                db=self.db,
-                name="Setlist Acústico",
-                description="Versão atualizada",
-                remove_cover=False,
-                cover_image=None,
-            )
+        res_update = update_playlist(
+            playlist_id=playlist_id,
+            db=self.db,
+            name="Setlist Acústico",
+            description="Versão atualizada",
+            remove_cover=False,
+            cover_image=None,
         )
         self.assertEqual(res_update["playlist"]["name"], "Setlist Acústico")
         self.assertEqual(res_update["playlist"]["description"], "Versão atualizada")

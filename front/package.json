@@ -1,7 +1,8 @@
 {
-  "name": "player-musica",
+  "name": "easycovers-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Studio-grade Web Audio Player & Multi-Track Practice Mixer for EasyCovers",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -62,7 +62,7 @@ def get_user_playlists(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/playlists/{user_id}")
-async def create_playlist(
+def create_playlist(
     user_id: int,
     db: Session = Depends(get_db),
     name: str = Form(...),
@@ -112,7 +112,7 @@ async def create_playlist(
 
 
 @router.put("/playlists/{playlist_id}")
-async def update_playlist(
+def update_playlist(
     playlist_id: int,
     db: Session = Depends(get_db),
     name: str = Form(...),
