@@ -263,5 +263,5 @@ OK
 
 Desenvolvido por **Lucas Abbade**  
 - **GitHub:** [github.com/Lucas-Abbade](https://github.com/Lucas-Abbade)  
-- **LinkedIn:** [Seu LinkedIn](https://www.linkedin.com)  
+- **LinkedIn:** [Lucas Abbade](www.linkedin.com/in/lucas-abbade-b380a736b)  
 - **E-mail:** [lucasabbade1@gmail.com](mailto:lucasabbade1@gmail.com)
